@@ -64,4 +64,10 @@ class Kernel extends HttpKernel
         // Custom middleware
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
     ];
+
+    // This was expected to be placed in app/Console/Kernel.php
+    protected function schedule(Schedule $schedule)
+    {
+        $schedule->job(new \App\Jobs\MonitorPositionsJob)->everyMinute();
+    }
 }

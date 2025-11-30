@@ -99,43 +99,33 @@
     </div>
 
     <!-- Right Side - Registration Form -->
-    <div class="col-lg-5 d-flex align-items-center justify-content-center p-4 p-lg-5 bg-body">
-        <div class="w-100" style="max-width: 500px;">
+    <div class="col-lg-5 d-flex align-items-center justify-content-center p-5">
+        <div class="w-100" style="max-width: 450px;">
             
-            <!-- Theme Switcher -->
-            <div class="d-flex justify-content-end gap-2 mb-4">
-                <button class="btn btn-outline-secondary btn-sm" id="themeToggle" onclick="toggleTheme()">
-                    <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
-                </button>
-            </div>
-
-            <!-- Mobile Logo -->
+            <!-- Logo for Mobile -->
             <div class="d-lg-none text-center mb-5">
                 <div class="d-inline-flex align-items-center">
                     <div class="bg-primary bg-opacity-10 p-3 rounded-3 me-2">
                         <i class="bi bi-robot text-primary fs-1"></i>
                     </div>
                     <div class="text-start">
-                        <h2 class="fw-bold mb-0">CryptoBot Pro</h2>
-                        <small class="text-muted">Enterprise Edition</small>
+                        <h3 class="fw-bold mb-0">CryptoBot Pro</h3>
+                        <small class="text-muted">Enterprise Trading</small>
                     </div>
                 </div>
             </div>
 
-            <!-- Registration Card -->
-            <div class="card border-0 shadow-lg">
-                <div class="card-body p-4 p-lg-5">
-                    <div class="mb-4">
-                        <h3 class="fw-bold mb-2">Create Account</h3>
-                        <p class="text-muted mb-0">Start automated trading in minutes</p>
-                    </div>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4 p-md-5">
+                    
+                    <h2 class="fw-bold mb-2">Create Your Account</h2>
+                    <p class="text-muted mb-4">Get started with automated crypto trading</p>
 
-                    @if($errors->any())
+                    @if ($errors->any())
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <strong>Error!</strong> Please check the following:
+                            <strong><i class="bi bi-exclamation-triangle me-2"></i>Please correct the following errors:</strong>
                             <ul class="mb-0 mt-2">
-                                @foreach($errors->all() as $error)
+                                @foreach ($errors->all() as $error)
                                     <li>{{ $error }}</li>
                                 @endforeach
                             </ul>
@@ -146,18 +136,41 @@
                     <form method="POST" action="{{ route('register') }}" id="registerForm">
                         @csrf
                         
-                        <div class="mb-3">
-                            <label for="name" class="form-label fw-semibold">
-                                Full Name
-                                <span class="text-danger">*</span>
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-body-secondary border-end-0">
-                                    <i class="bi bi-person"></i>
-                                </span>
-                                <input type="text" class="form-control border-start-0 ps-0" 
-                                       id="name" name="name" placeholder="John Doe" 
-                                       value="{{ old('name') }}" required autofocus>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label for="first_name" class="form-label fw-semibold">
+                                    First Name
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-body-secondary border-end-0">
+                                        <i class="bi bi-person"></i>
+                                    </span>
+                                    <input type="text" class="form-control border-start-0 ps-0 @error('first_name') is-invalid @enderror" 
+                                           id="first_name" name="first_name" placeholder="John" 
+                                           value="{{ old('first_name') }}" required autofocus>
+                                </div>
+                                @error('first_name')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="last_name" class="form-label fw-semibold">
+                                    Last Name
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-body-secondary border-end-0">
+                                        <i class="bi bi-person-fill"></i>
+                                    </span>
+                                    <input type="text" class="form-control border-start-0 ps-0 @error('last_name') is-invalid @enderror" 
+                                           id="last_name" name="last_name" placeholder="Doe" 
+                                           value="{{ old('last_name') }}" required>
+                                </div>
+                                @error('last_name')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
                             </div>
                         </div>
 
@@ -170,10 +183,13 @@
                                 <span class="input-group-text bg-body-secondary border-end-0">
                                     <i class="bi bi-envelope"></i>
                                 </span>
-                                <input type="email" class="form-control border-start-0 ps-0" 
+                                <input type="email" class="form-control border-start-0 ps-0 @error('email') is-invalid @enderror" 
                                        id="email" name="email" placeholder="you@example.com" 
                                        value="{{ old('email') }}" required>
                             </div>
+                            @error('email')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="mb-3">
@@ -185,7 +201,7 @@
                                 <span class="input-group-text bg-body-secondary border-end-0">
                                     <i class="bi bi-lock"></i>
                                 </span>
-                                <input type="password" class="form-control border-start-0 border-end-0 ps-0" 
+                                <input type="password" class="form-control border-start-0 border-end-0 ps-0 @error('password') is-invalid @enderror" 
                                        id="password" name="password" placeholder="Minimum 8 characters" required>
                                 <button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePassword('password', 'passwordIcon')">
                                     <i class="bi bi-eye" id="passwordIcon"></i>
@@ -195,6 +211,9 @@
                                 <i class="bi bi-info-circle me-1"></i>
                                 Use at least 8 characters with a mix of letters, numbers & symbols
                             </div>
+                            @error('password')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="mb-4">
@@ -217,11 +236,14 @@
 
                         <div class="mb-4">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                                <input class="form-check-input @error('terms') is-invalid @enderror" type="checkbox" id="terms" name="terms" value="1" {{ old('terms') ? 'checked' : '' }} required>
                                 <label class="form-check-label small" for="terms">
                                     I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and <a href="#" class="text-decoration-none">Privacy Policy</a>
                                 </label>
                             </div>
+                            @error('terms')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="d-grid gap-2 mb-4">

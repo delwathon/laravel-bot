@@ -8,7 +8,7 @@
 <!-- KPI Cards -->
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100 bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card border-0 shadow-sm h-100 bg-light" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
             <div class="card-body text-white">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
@@ -513,7 +513,7 @@
 <div class="row g-3">
     @if(auth()->user()->is_admin)
         <div class="col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100 bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" role="button" onclick="window.location.href='{{ route('admin.signals.index') }}'">
+            <div class="card border-0 shadow-sm h-100 bg-light text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" role="button" onclick="window.location.href='{{ route('admin.signals.index') }}'">
                 <div class="card-body p-4">
                     <i class="bi bi-lightning-charge-fill fs-1 mb-3 d-block"></i>
                     <h5 class="fw-bold mb-2">Generate Signals</h5>
@@ -553,7 +553,7 @@
         </div>
     @else
         <div class="col-md-6 col-lg-3">
-            <div class="card border-0 shadow-sm h-100 bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" role="button" onclick="window.location.href='{{ route('user.exchanges.manage') }}'">
+            <div class="card border-0 shadow-sm h-100 bg-light text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" role="button" onclick="window.location.href='{{ route('user.exchanges.manage') }}'">
                 <div class="card-body p-4">
                     <i class="bi bi-bank fs-1 mb-3 d-block"></i>
                     <h5 class="fw-bold mb-2">My Exchanges</h5>

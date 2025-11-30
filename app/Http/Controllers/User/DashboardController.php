@@ -8,113 +8,78 @@ use Illuminate\Http\Request;
 class DashboardController extends Controller
 {
     /**
-     * Show the admin dashboard.
-     *
-     * @return \Illuminate\View\View
+     * Display user dashboard
      */
     public function index()
     {
-        // Test data for dashboard
-        $data = [
-            'totalUsers' => 248,
-            'activeTrades' => 1342,
-            'totalPnl' => 45231,
-            'winRate' => 68.4,
-            
-            // Recent activities
-            'recentActivities' => collect([
-                (object) [
-                    'title' => 'Trade Executed',
-                    'description' => 'BTC/USDT LONG • Bybit',
-                    'time_ago' => '2m',
-                    'amount' => 1234,
-                    'type_color' => 'success',
-                    'icon' => 'check-circle-fill'
-                ],
-                (object) [
-                    'title' => 'New User',
-                    'description' => 'john.doe@example.com',
-                    'time_ago' => '5m',
-                    'amount' => null,
-                    'type_color' => 'primary',
-                    'icon' => 'person-plus-fill'
-                ],
-                (object) [
-                    'title' => 'SL Triggered',
-                    'description' => 'ETH/USDT • User #1043',
-                    'time_ago' => '12m',
-                    'amount' => -432,
-                    'type_color' => 'warning',
-                    'icon' => 'exclamation-triangle-fill'
-                ],
-                (object) [
-                    'title' => 'Signal Generated',
-                    'description' => 'SOL/USDT LONG • 85% confidence',
-                    'time_ago' => '15m',
-                    'amount' => null,
-                    'type_color' => 'info',
-                    'icon' => 'lightning-charge-fill'
-                ],
-                (object) [
-                    'title' => 'TP Reached',
-                    'description' => 'XRP/USDT • 248 users',
-                    'time_ago' => '18m',
-                    'amount' => 8923,
-                    'type_color' => 'success',
-                    'icon' => 'bullseye'
-                ],
-            ]),
-            
-            // Top performing pairs
-            'topPairs' => collect([
-                (object) [
-                    'symbol' => 'BTC/USDT',
-                    'name' => 'Bitcoin',
-                    'icon' => 'currency-bitcoin',
-                    'color' => 'warning',
-                    'exchange' => 'Bybit',
-                    'exchange_color' => 'primary',
-                    'price' => 66450,
-                    'volume' => '2.4B',
-                    'change' => 3.45,
-                    'trades_count' => 145,
-                    'win_rate' => 72,
-                    'pnl' => 12456,
-                    'pnl_percent' => 18.3
-                ],
-                (object) [
-                    'symbol' => 'ETH/USDT',
-                    'name' => 'Ethereum',
-                    'icon' => 'currency-exchange',
-                    'color' => 'info',
-                    'exchange' => 'Binance',
-                    'exchange_color' => 'warning',
-                    'price' => 3245,
-                    'volume' => '1.8B',
-                    'change' => 2.18,
-                    'trades_count' => 98,
-                    'win_rate' => 68,
-                    'pnl' => 8923,
-                    'pnl_percent' => 14.2
-                ],
-                (object) [
-                    'symbol' => 'SOL/USDT',
-                    'name' => 'Solana',
-                    'icon' => 'coin',
-                    'color' => 'purple',
-                    'exchange' => 'Bybit',
-                    'exchange_color' => 'primary',
-                    'price' => 145.80,
-                    'volume' => '892M',
-                    'change' => 5.23,
-                    'trades_count' => 76,
-                    'win_rate' => 65,
-                    'pnl' => 6734,
-                    'pnl_percent' => 12.1
-                ],
-            ])
+        $user = auth()->user();
+        
+        // User trading statistics - REAL DATA
+        $stats = [
+            'total_profit' => $user->total_pnl,
+            'total_trades' => $user->total_trades_count,
+            'active_trades' => $user->openTrades()->count(),
+            'win_rate' => $user->win_rate,
+            'connected_exchanges' => $user->hasConnectedExchange() ? 1 : 0,
+            'today_profit' => $user->trades()
+                ->whereDate('closed_at', today())
+                ->sum('realized_pnl'),
         ];
         
-        return view('admin.dashboard', $data);
+        // Calculate total profit percentage
+        $closedTrades = $user->closedTrades()->count();
+        if ($closedTrades > 0) {
+            $totalInvested = $user->closedTrades()
+                ->sum(\DB::raw('entry_price * quantity'));
+            $stats['total_profit_percent'] = $totalInvested > 0 
+                ? round(($stats['total_profit'] / $totalInvested) * 100, 2)
+                : 0;
+        } else {
+            $stats['total_profit_percent'] = 0;
+        }
+        
+        // Recent trades (last 10)
+        $recentTrades = $user->trades()
+            ->with(['signal'])
+            ->latest()
+            ->take(10)
+            ->get();
+        
+        // Active positions
+        $activePositions = $user->activePositions()
+            ->with(['trade'])
+            ->get();
+        
+        // Calculate account balance from exchange
+        $accountBalance = 0;
+        if ($user->hasConnectedExchange()) {
+            $accountBalance = $user->exchangeAccount->balance;
+        }
+        $stats['account_balance'] = $accountBalance;
+        
+        // Performance chart data (last 30 days)
+        $performanceData = [
+            'labels' => [],
+            'values' => [],
+        ];
+        
+        for ($i = 29; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $performanceData['labels'][] = $date->format('M d');
+            
+            $dailyPnl = $user->trades()
+                ->whereDate('closed_at', $date->toDateString())
+                ->sum('realized_pnl');
+            
+            $performanceData['values'][] = $dailyPnl;
+        }
+        
+        return view('user.dashboard', compact(
+            'user',
+            'stats',
+            'recentTrades',
+            'activePositions',
+            'performanceData'
+        ));
     }
 }

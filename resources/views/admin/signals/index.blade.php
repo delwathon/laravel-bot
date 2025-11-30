@@ -8,7 +8,7 @@
 <!-- Signal Status Overview -->
 <div class="row g-3 mb-4">
     <div class="col-lg-8">
-        <div class="card border-0 shadow-sm bg-gradient text-white h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="card border-0 shadow-sm bg-light text-white h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
             <div class="card-body p-4">
                 <div class="row align-items-center">
                     <div class="col-md-8">

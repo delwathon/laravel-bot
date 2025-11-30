@@ -16,7 +16,7 @@
     
     <!-- Animated Background -->
     <div class="position-fixed w-100 h-100 top-0 start-0" style="z-index: 0; overflow: hidden;">
-        <div class="position-absolute top-0 start-0 w-100 h-100 bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); opacity: 0.1;"></div>
+        <div class="position-absolute top-0 start-0 w-100 h-100 bg-light" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); opacity: 0.1;"></div>
     </div>
 
     @yield('content')

@@ -1,358 +1,199 @@
 @extends('layouts.app')
 
-@section('title', 'Connect Exchange - CryptoBot Pro')
+@section('title', 'Connect Bybit - CryptoBot Pro')
 
-@section('page-title', 'Connect Exchange')
+@section('page-title', 'Connect Your Bybit Account')
 
 @section('content')
+
+@if(session('info'))
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <i class="bi bi-info-circle me-2"></i>{{ session('info') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+@if($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong><i class="bi bi-exclamation-triangle me-2"></i>Error:</strong>
+        <ul class="mb-0 mt-2">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
 <!-- Info Banner -->
-<div class="alert alert-info border-0 shadow-sm mb-4">
-    <div class="d-flex align-items-start">
-        <div class="bg-info bg-opacity-10 p-3 rounded-circle me-3 flex-shrink-0">
-            <i class="bi bi-info-circle-fill text-info fs-4"></i>
-        </div>
-        <div>
-            <h5 class="fw-bold mb-2">Connect Your Exchange Account</h5>
-            <p class="mb-2">To start automated trading, connect your Bybit or Binance account using API keys. Your keys are encrypted and never shared.</p>
-            <ul class="mb-0 small">
-                <li>API keys allow the bot to execute trades on your behalf</li>
-                <li>Keys are stored securely with AES-256 encryption</li>
-                <li>You maintain full control and can disconnect anytime</li>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<!-- Exchange Selection -->
-<div class="row g-4 mb-4">
-    <!-- Bybit Card -->
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center mb-4">
-                    <div class="bg-primary bg-opacity-10 p-3 rounded-3 me-3">
-                        <i class="bi bi-coin text-primary fs-1"></i>
-                    </div>
-                    <div>
-                        <h4 class="fw-bold mb-1">Bybit</h4>
-                        <p class="text-muted mb-0">Global crypto derivatives exchange</p>
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <h6 class="fw-bold mb-3">Features:</h6>
-                    <ul class="list-unstyled">
-                        <li class="mb-2">
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            High liquidity perpetual contracts
-                        </li>
-                        <li class="mb-2">
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            Up to 100x leverage
-                        </li>
-                        <li class="mb-2">
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            Advanced trading tools
-                        </li>
-                        <li class="mb-2">
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            Low trading fees
-                        </li>
-                    </ul>
-                </div>
-                <button class="btn btn-primary w-100 btn-lg" data-bs-toggle="modal" data-bs-target="#connectBybitModal">
-                    <i class="bi bi-plug me-2"></i>Connect Bybit Account
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Binance Card -->
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center mb-4">
-                    <div class="bg-warning bg-opacity-10 p-3 rounded-3 me-3">
-                        <i class="bi bi-currency-bitcoin text-warning fs-1"></i>
-                    </div>
-                    <div>
-                        <h4 class="fw-bold mb-1">Binance</h4>
-                        <p class="text-muted mb-0">World's largest crypto exchange</p>
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <h6 class="fw-bold mb-3">Features:</h6>
-                    <ul class="list-unstyled">
-                        <li class="mb-2">
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            Largest trading volume globally
-                        </li>
-                        <li class="mb-2">
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            Hundreds of trading pairs
-                        </li>
-                        <li class="mb-2">
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            Spot and futures trading
-                        </li>
-                        <li class="mb-2">
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            Competitive fee structure
-                        </li>
-                    </ul>
-                </div>
-                <button class="btn btn-warning w-100 btn-lg" data-bs-toggle="modal" data-bs-target="#connectBinanceModal">
-                    <i class="bi bi-plug me-2"></i>Connect Binance Account
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Setup Guide -->
-<div class="card border-0 shadow-sm">
-    <div class="card-header bg-transparent border-0 p-4">
-        <h5 class="fw-bold mb-0">
-            <i class="bi bi-book me-2"></i>How to Get Your API Keys
-        </h5>
-    </div>
+<div class="card border-0 shadow-sm mb-4 bg-primary bg-opacity-10">
     <div class="card-body p-4">
-        <div class="row">
-            <div class="col-md-6 mb-4">
-                <h6 class="fw-bold mb-3">
-                    <i class="bi bi-coin text-primary me-2"></i>Bybit API Setup
-                </h6>
-                <ol class="small">
-                    <li class="mb-2">Log in to your Bybit account</li>
-                    <li class="mb-2">Go to <strong>Account & Security → API</strong></li>
-                    <li class="mb-2">Click <strong>Create New Key</strong></li>
-                    <li class="mb-2">Choose <strong>System-generated API Keys</strong></li>
-                    <li class="mb-2">Set permissions: Enable <strong>Read</strong> and <strong>Trade</strong></li>
-                    <li class="mb-2">Add IP whitelist (optional but recommended)</li>
-                    <li class="mb-2">Complete 2FA verification</li>
-                    <li class="mb-2">Copy your API Key and Secret</li>
-                </ol>
-                <a href="https://www.bybit.com" target="_blank" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-box-arrow-up-right me-1"></i>Go to Bybit
-                </a>
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5 class="fw-bold text-primary mb-2">
+                    <i class="bi bi-info-circle-fill me-2"></i>Connect Your Bybit Account
+                </h5>
+                <p class="mb-0 text-muted">
+                    Connect your Bybit account to start automated trading. You can only connect one Bybit account per CryptoBot Pro account.
+                </p>
             </div>
-            <div class="col-md-6 mb-4">
-                <h6 class="fw-bold mb-3">
-                    <i class="bi bi-currency-bitcoin text-warning me-2"></i>Binance API Setup
-                </h6>
-                <ol class="small">
-                    <li class="mb-2">Log in to your Binance account</li>
-                    <li class="mb-2">Go to <strong>Profile → API Management</strong></li>
-                    <li class="mb-2">Click <strong>Create API</strong></li>
-                    <li class="mb-2">Choose <strong>System Generated</strong></li>
-                    <li class="mb-2">Enable <strong>Enable Spot & Margin Trading</strong></li>
-                    <li class="mb-2">Restrict access to trusted IPs (optional)</li>
-                    <li class="mb-2">Complete security verification</li>
-                    <li class="mb-2">Save your API Key and Secret Key</li>
-                </ol>
-                <a href="https://www.binance.com" target="_blank" class="btn btn-outline-warning btn-sm">
-                    <i class="bi bi-box-arrow-up-right me-1"></i>Go to Binance
-                </a>
-            </div>
-        </div>
-
-        <div class="alert alert-warning border-0 mt-3">
-            <div class="d-flex align-items-start">
-                <i class="bi bi-exclamation-triangle-fill text-warning fs-4 me-3"></i>
-                <div class="small">
-                    <strong>Security Best Practices:</strong>
-                    <ul class="mb-0 mt-2">
-                        <li>Never enable withdrawal permissions on API keys</li>
-                        <li>Use IP whitelisting when possible</li>
-                        <li>Enable 2FA on your exchange account</li>
-                        <li>Keep your API secret secure and never share it</li>
-                        <li>Regularly rotate your API keys</li>
-                    </ul>
-                </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <span class="badge bg-primary bg-opacity-25 text-primary px-3 py-2 fs-6">
+                    <i class="bi bi-shield-check me-1"></i>Secure Connection
+                </span>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Connect Bybit Modal -->
-<div class="modal fade" id="connectBybitModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0 bg-primary bg-opacity-10">
-                <h5 class="modal-title fw-bold text-primary">
-                    <i class="bi bi-coin me-2"></i>Connect Bybit Account
+<div class="row g-4">
+    <!-- Connection Form -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 p-4">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-link-45deg me-2"></i>API Credentials
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ route('user.exchanges.store') }}" id="bybitConnectForm">
-                @csrf
-                <input type="hidden" name="exchange" value="bybit">
-                
-                <div class="modal-body p-4">
-                    <div class="alert alert-info border-0 mb-4">
-                        <i class="bi bi-shield-lock me-2"></i>
-                        <small>Your API keys are encrypted with AES-256 encryption and stored securely.</small>
-                    </div>
-
+            <div class="card-body p-4">
+                <form method="POST" action="{{ route('user.exchanges.store') }}">
+                    @csrf
+                    
                     <div class="mb-4">
-                        <label for="bybit_api_key" class="form-label fw-semibold">
+                        <label for="api_key" class="form-label fw-semibold">
                             API Key
                             <span class="text-danger">*</span>
                         </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-body-secondary">
-                                <i class="bi bi-key"></i>
-                            </span>
-                            <input type="text" class="form-control" id="bybit_api_key" name="api_key" 
-                                   placeholder="Enter your Bybit API Key" required>
-                        </div>
+                        <input type="text" 
+                               class="form-control form-control-lg @error('api_key') is-invalid @enderror" 
+                               id="api_key" 
+                               name="api_key" 
+                               value="{{ old('api_key') }}"
+                               placeholder="Enter your Bybit API Key" 
+                               required>
+                        @error('api_key')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
                         <div class="form-text small">
-                            Your public API key from Bybit
+                            <i class="bi bi-info-circle me-1"></i>
+                            Your API key from Bybit account settings
                         </div>
                     </div>
 
                     <div class="mb-4">
-                        <label for="bybit_api_secret" class="form-label fw-semibold">
+                        <label for="api_secret" class="form-label fw-semibold">
                             API Secret
                             <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
-                            <span class="input-group-text bg-body-secondary">
-                                <i class="bi bi-shield-lock"></i>
-                            </span>
-                            <input type="password" class="form-control" id="bybit_api_secret" name="api_secret" 
-                                   placeholder="Enter your Bybit API Secret" required>
-                            <button class="btn btn-outline-secondary" type="button" onclick="toggleSecret('bybit_api_secret', 'bybitSecretIcon')">
-                                <i class="bi bi-eye" id="bybitSecretIcon"></i>
+                            <input type="password" 
+                                   class="form-control form-control-lg @error('api_secret') is-invalid @enderror" 
+                                   id="api_secret" 
+                                   name="api_secret"
+                                   placeholder="Enter your Bybit API Secret" 
+                                   required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('api_secret', 'secretIcon')">
+                                <i class="bi bi-eye" id="secretIcon"></i>
                             </button>
                         </div>
+                        @error('api_secret')
+                            <div class="text-danger small mt-1">{{ $message }}</div>
+                        @enderror
                         <div class="form-text small">
-                            Your private API secret (never shared)
+                            <i class="bi bi-info-circle me-1"></i>
+                            Your API secret will be encrypted and stored securely
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label for="bybit_label" class="form-label fw-semibold">Account Label (Optional)</label>
-                        <input type="text" class="form-control" id="bybit_label" name="label" 
-                               placeholder="e.g., Main Trading Account">
-                        <div class="form-text small">
-                            Give this connection a name to identify it
+                    <div class="alert alert-warning border-0 bg-warning bg-opacity-10 mb-4">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-exclamation-triangle fs-5 me-3"></i>
+                            <div>
+                                <strong>Important Security Notes:</strong>
+                                <ul class="mb-0 mt-2 small">
+                                    <li>Never share your API credentials with anyone</li>
+                                    <li>Enable IP whitelist on Bybit for added security</li>
+                                    <li>We only need trading permissions (no withdrawal rights)</li>
+                                    <li>You can disconnect your account at any time</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="bybit_testnet">
-                        <label class="form-check-label" for="bybit_testnet">
-                            Use Testnet (for testing only)
-                        </label>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-link-45deg me-2"></i>Connect Bybit Account
+                        </button>
+                        <a href="{{ route('user.dashboard') }}" class="btn btn-outline-secondary btn-lg">
+                            Cancel
+                        </a>
                     </div>
-
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="bybit_terms" required>
-                        <label class="form-check-label small" for="bybit_terms">
-                            I confirm that I have disabled withdrawal permissions on this API key and understand the risks
-                        </label>
-                    </div>
-                </div>
-
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-plug me-2"></i>Connect & Test
-                    </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Connect Binance Modal -->
-<div class="modal fade" id="connectBinanceModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0 bg-warning bg-opacity-10">
-                <h5 class="modal-title fw-bold text-warning">
-                    <i class="bi bi-currency-bitcoin me-2"></i>Connect Binance Account
+    <!-- Instructions Sidebar -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-transparent border-0 p-4">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-question-circle me-2"></i>How to Get API Keys
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ route('user.exchanges.store') }}" id="binanceConnectForm">
-                @csrf
-                <input type="hidden" name="exchange" value="binance">
-                
-                <div class="modal-body p-4">
-                    <div class="alert alert-info border-0 mb-4">
-                        <i class="bi bi-shield-lock me-2"></i>
-                        <small>Your API keys are encrypted with AES-256 encryption and stored securely.</small>
-                    </div>
+            <div class="card-body p-4">
+                <ol class="mb-0 ps-3">
+                    <li class="mb-3">
+                        <strong>Login to Bybit</strong>
+                        <p class="small text-muted mb-0">Go to <a href="https://www.bybit.com" target="_blank">bybit.com</a> and login to your account</p>
+                    </li>
+                    <li class="mb-3">
+                        <strong>Navigate to API Settings</strong>
+                        <p class="small text-muted mb-0">Go to Account → API Management</p>
+                    </li>
+                    <li class="mb-3">
+                        <strong>Create New API Key</strong>
+                        <p class="small text-muted mb-0">Click "Create New Key" and select "System-generated API Keys"</p>
+                    </li>
+                    <li class="mb-3">
+                        <strong>Set Permissions</strong>
+                        <p class="small text-muted mb-0">Enable: Read, Trading. Disable: Withdrawal</p>
+                    </li>
+                    <li class="mb-0">
+                        <strong>Copy Credentials</strong>
+                        <p class="small text-muted mb-0">Save your API Key and Secret securely</p>
+                    </li>
+                </ol>
+            </div>
+        </div>
 
-                    <div class="mb-4">
-                        <label for="binance_api_key" class="form-label fw-semibold">
-                            API Key
-                            <span class="text-danger">*</span>
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-body-secondary">
-                                <i class="bi bi-key"></i>
-                            </span>
-                            <input type="text" class="form-control" id="binance_api_key" name="api_key" 
-                                   placeholder="Enter your Binance API Key" required>
-                        </div>
-                        <div class="form-text small">
-                            Your public API key from Binance
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="binance_api_secret" class="form-label fw-semibold">
-                            API Secret
-                            <span class="text-danger">*</span>
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-body-secondary">
-                                <i class="bi bi-shield-lock"></i>
-                            </span>
-                            <input type="password" class="form-control" id="binance_api_secret" name="api_secret" 
-                                   placeholder="Enter your Binance API Secret" required>
-                            <button class="btn btn-outline-secondary" type="button" onclick="toggleSecret('binance_api_secret', 'binanceSecretIcon')">
-                                <i class="bi bi-eye" id="binanceSecretIcon"></i>
-                            </button>
-                        </div>
-                        <div class="form-text small">
-                            Your private API secret (never shared)
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="binance_label" class="form-label fw-semibold">Account Label (Optional)</label>
-                        <input type="text" class="form-control" id="binance_label" name="label" 
-                               placeholder="e.g., Main Trading Account">
-                        <div class="form-text small">
-                            Give this connection a name to identify it
-                        </div>
-                    </div>
-
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="binance_testnet">
-                        <label class="form-check-label" for="binance_testnet">
-                            Use Testnet (for testing only)
-                        </label>
-                    </div>
-
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="binance_terms" required>
-                        <label class="form-check-label small" for="binance_terms">
-                            I confirm that I have disabled withdrawal permissions on this API key and understand the risks
-                        </label>
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3">
+                    <i class="bi bi-shield-check me-2"></i>Security Features
+                </h6>
+                <div class="d-flex align-items-start mb-3">
+                    <i class="bi bi-check-circle-fill text-success me-2 mt-1"></i>
+                    <div class="small">
+                        <strong>Encrypted Storage</strong>
+                        <p class="text-muted mb-0">API secrets are encrypted using AES-256</p>
                     </div>
                 </div>
-
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning">
-                        <i class="bi bi-plug me-2"></i>Connect & Test
-                    </button>
+                <div class="d-flex align-items-start mb-3">
+                    <i class="bi bi-check-circle-fill text-success me-2 mt-1"></i>
+                    <div class="small">
+                        <strong>No Withdrawal Access</strong>
+                        <p class="text-muted mb-0">We only request trading permissions</p>
+                    </div>
                 </div>
-            </form>
+                <div class="d-flex align-items-start">
+                    <i class="bi bi-check-circle-fill text-success me-2 mt-1"></i>
+                    <div class="small">
+                        <strong>Easy Disconnect</strong>
+                        <p class="text-muted mb-0">Revoke access anytime from your dashboard</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -361,30 +202,17 @@
 
 @push('scripts')
 <script>
-    function toggleSecret(fieldId, iconId) {
-        const secretInput = document.getElementById(fieldId);
-        const secretIcon = document.getElementById(iconId);
+    function togglePassword(fieldId, iconId) {
+        const field = document.getElementById(fieldId);
+        const icon = document.getElementById(iconId);
         
-        if (secretInput.type === 'password') {
-            secretInput.type = 'text';
-            secretIcon.className = 'bi bi-eye-slash';
+        if (field.type === 'password') {
+            field.type = 'text';
+            icon.className = 'bi bi-eye-slash';
         } else {
-            secretInput.type = 'password';
-            secretIcon.className = 'bi bi-eye';
+            field.type = 'password';
+            icon.className = 'bi bi-eye';
         }
     }
-
-    // Form submission handlers
-    document.getElementById('bybitConnectForm').addEventListener('submit', function(e) {
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testing connection...';
-    });
-
-    document.getElementById('binanceConnectForm').addEventListener('submit', function(e) {
-        const submitBtn = this.querySelector('button[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testing connection...';
-    });
 </script>
 @endpush

@@ -5,7 +5,7 @@
 @section('page-title', 'User Management')
 
 @section('content')
-<!-- Stats Overview -->
+<!-- Statistics Cards -->
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-xl-3">
         <div class="card border-0 shadow-sm">
@@ -13,16 +13,14 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Total Users</div>
-                        <h3 class="fw-bold mb-0">248</h3>
+                        <h3 class="fw-bold mb-0">{{ $totalUsers }}</h3>
                     </div>
                     <div class="bg-primary bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-people-fill text-primary fs-4"></i>
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="badge bg-success bg-opacity-10 text-success">
-                        <i class="bi bi-arrow-up"></i> 12 this month
-                    </span>
+                    <span class="text-muted small">All registered accounts</span>
                 </div>
             </div>
         </div>
@@ -34,14 +32,14 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Active Users</div>
-                        <h3 class="fw-bold mb-0 text-success">231</h3>
+                        <h3 class="fw-bold mb-0 text-success">{{ $activeUsers }}</h3>
                     </div>
                     <div class="bg-success bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-person-check-fill text-success fs-4"></i>
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="text-muted small">93.1% active rate</span>
+                    <span class="text-muted small">{{ $totalUsers > 0 ? round(($activeUsers / $totalUsers) * 100, 1) : 0 }}% of total</span>
                 </div>
             </div>
         </div>
@@ -53,14 +51,14 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Connected Exchanges</div>
-                        <h3 class="fw-bold mb-0 text-info">412</h3>
+                        <h3 class="fw-bold mb-0 text-info">{{ $connectedExchanges }}</h3>
                     </div>
                     <div class="bg-info bg-opacity-10 p-3 rounded-3">
-                        <i class="bi bi-bank text-info fs-4"></i>
+                        <i class="bi bi-link-45deg text-info fs-4"></i>
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="text-muted small">Avg 1.7 per user</span>
+                    <span class="text-muted small">Bybit accounts</span>
                 </div>
             </div>
         </div>
@@ -71,65 +69,71 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="text-muted text-uppercase small fw-bold mb-1">Total Trades (24h)</div>
-                        <h3 class="fw-bold mb-0 text-warning">1,342</h3>
+                        <div class="text-muted text-uppercase small fw-bold mb-1">New This Month</div>
+                        <h3 class="fw-bold mb-0 text-warning">{{ $newThisMonth }}</h3>
                     </div>
                     <div class="bg-warning bg-opacity-10 p-3 rounded-3">
-                        <i class="bi bi-graph-up text-warning fs-4"></i>
+                        <i class="bi bi-person-plus-fill text-warning fs-4"></i>
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="text-muted small">5.4 per user</span>
+                    <span class="text-muted small">{{ now()->format('F Y') }}</span>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Filters and Actions -->
+<!-- Filters and Search -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-4">
-        <div class="row g-3">
-            <div class="col-lg-4">
-                <div class="input-group">
-                    <span class="input-group-text bg-body-secondary border-end-0">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" class="form-control border-start-0 ps-0" placeholder="Search users by name, email, or ID..." id="searchUsers">
+        <form method="GET" action="{{ route('admin.users.index') }}">
+            <div class="row g-3">
+                <div class="col-lg-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-body-secondary border-end-0">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0 ps-0" 
+                               name="search" 
+                               value="{{ request('search') }}" 
+                               placeholder="Search users by name, email, or ID..." 
+                               id="searchUsers">
+                    </div>
+                </div>
+                <div class="col-lg-2">
+                    <select class="form-select" name="status" id="filterStatus">
+                        <option value="">All Status</option>
+                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <select class="form-select" name="exchange" id="filterExchange">
+                        <option value="">All Exchanges</option>
+                        <option value="connected" {{ request('exchange') == 'connected' ? 'selected' : '' }}>Connected</option>
+                        <option value="not_connected" {{ request('exchange') == 'not_connected' ? 'selected' : '' }}>Not Connected</option>
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <select class="form-select" name="sort_by" id="filterSort">
+                        <option value="created_at" {{ request('sort_by') == 'created_at' ? 'selected' : '' }}>Newest First</option>
+                        <option value="name" {{ request('sort_by') == 'name' ? 'selected' : '' }}>Name (A-Z)</option>
+                        <option value="email" {{ request('sort_by') == 'email' ? 'selected' : '' }}>Email (A-Z)</option>
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-funnel me-1"></i>Filter
+                        </button>
+                        <a href="{{ route('admin.users.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
-            <div class="col-lg-2">
-                <select class="form-select" id="filterStatus">
-                    <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="suspended">Suspended</option>
-                </select>
-            </div>
-            <div class="col-lg-2">
-                <select class="form-select" id="filterExchange">
-                    <option value="">All Exchanges</option>
-                    <option value="bybit">Bybit</option>
-                    <option value="binance">Binance</option>
-                    <option value="both">Both</option>
-                    <option value="none">Not Connected</option>
-                </select>
-            </div>
-            <div class="col-lg-2">
-                <select class="form-select" id="filterSort">
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="name">Name (A-Z)</option>
-                    <option value="trades">Most Trades</option>
-                    <option value="pnl">Highest P&L</option>
-                </select>
-            </div>
-            <div class="col-lg-2">
-                <button class="btn btn-outline-secondary w-100">
-                    <i class="bi bi-funnel me-2"></i>More Filters
-                </button>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -148,9 +152,6 @@
                 <button class="btn btn-outline-secondary">
                     <i class="bi bi-printer"></i> Print
                 </button>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bulkActionModal">
-                    <i class="bi bi-lightning-fill"></i> Bulk Actions
-                </button>
             </div>
         </div>
     </div>
@@ -166,7 +167,7 @@
                         </th>
                         <th class="border-0 py-3 fw-semibold">User</th>
                         <th class="border-0 py-3 fw-semibold">Status</th>
-                        <th class="border-0 py-3 fw-semibold">Exchanges</th>
+                        <th class="border-0 py-3 fw-semibold">Exchange</th>
                         <th class="border-0 py-3 fw-semibold">Trades (24h)</th>
                         <th class="border-0 py-3 fw-semibold">Active Positions</th>
                         <th class="border-0 py-3 fw-semibold">P&L (Total)</th>
@@ -175,428 +176,146 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- User Row 1 -->
-                    <tr>
-                        <td class="px-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox">
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
-                                    <i class="bi bi-person-fill text-primary"></i>
+                    @forelse($users as $user)
+                        <tr>
+                            <td class="px-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" value="{{ $user->id }}">
                                 </div>
-                                <div>
-                                    <div class="fw-semibold">John Doe</div>
-                                    <small class="text-muted">john.doe@example.com</small>
-                                    <div class="small">
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">ID: 1043</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
+                                        <i class="bi bi-person-fill text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ $user->name }}</div>
+                                        <small class="text-muted">{{ $user->email }}</small>
+                                        <div class="small">
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary">ID: {{ $user->id }}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Active
-                            </span>
-                        </td>
-                        <td>
-                            <div class="d-flex gap-1">
-                                <span class="badge bg-primary bg-opacity-10 text-primary">
-                                    <i class="bi bi-coin me-1"></i>Bybit
-                                </span>
-                                <span class="badge bg-warning bg-opacity-10 text-warning">
-                                    <i class="bi bi-currency-bitcoin me-1"></i>Binance
-                                </span>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-info rounded-pill">23</span>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning rounded-pill">8</span>
-                        </td>
-                        <td>
-                            <div class="text-success fw-semibold">+$4,523</div>
-                            <small class="text-muted">+12.3%</small>
-                        </td>
-                        <td>
-                            <div class="small">Jan 15, 2024</div>
-                            <small class="text-muted">9 months ago</small>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ route('admin.users.show', 3) }}" class="btn btn-outline-primary" title="View Details">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="{{ route('admin.users.edit', 3) }}" class="btn btn-outline-secondary" title="Edit">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <button class="btn btn-outline-danger" title="Suspend" data-bs-toggle="modal" data-bs-target="#suspendUserModal">
-                                    <i class="bi bi-ban"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- User Row 2 -->
-                    <tr>
-                        <td class="px-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox">
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
-                                    <i class="bi bi-person-fill text-success"></i>
+                            </td>
+                            <td>
+                                @if($user->email_verified_at)
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                        <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Active
+                                    </span>
+                                @else
+                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
+                                        <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Inactive
+                                    </span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($user->hasConnectedExchange())
+                                    <span class="badge bg-primary bg-opacity-10 text-primary">
+                                        <i class="bi bi-coin me-1"></i>Bybit
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary">
+                                        <i class="bi bi-x-circle me-1"></i>Not Connected
+                                    </span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="badge bg-info rounded-pill">{{ $user->today_trades_count ?? 0 }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning rounded-pill">{{ $user->active_positions_count ?? 0 }}</span>
+                            </td>
+                            <td>
+                                @php
+                                    $pnl = $user->total_pnl ?? 0;
+                                    $pnlPercent = $user->total_pnl_percent ?? 0;
+                                @endphp
+                                <div class="{{ $pnl >= 0 ? 'text-success' : 'text-danger' }} fw-semibold">
+                                    {{ $pnl >= 0 ? '+' : '' }}${{ number_format(abs($pnl), 2) }}
                                 </div>
-                                <div>
-                                    <div class="fw-semibold">Sarah Chen</div>
-                                    <small class="text-muted">sarah.chen@example.com</small>
-                                    <div class="small">
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">ID: 1092</span>
-                                    </div>
+                                <small class="{{ $pnlPercent >= 0 ? 'text-success' : 'text-danger' }}">
+                                    {{ $pnlPercent >= 0 ? '+' : '' }}{{ number_format($pnlPercent, 2) }}%
+                                </small>
+                            </td>
+                            <td>
+                                <div class="small">{{ $user->created_at->format('M d, Y') }}</div>
+                                <small class="text-muted">{{ $user->created_at->diffForHumans() }}</small>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ route('admin.users.show', $user) }}" class="btn btn-outline-primary" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-outline-secondary" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            onclick="confirmDelete({{ $user->id }}, '{{ $user->name }}')" 
+                                            title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Active
-                            </span>
-                        </td>
-                        <td>
-                            <div class="d-flex gap-1">
-                                <span class="badge bg-primary bg-opacity-10 text-primary">
-                                    <i class="bi bi-coin me-1"></i>Bybit
-                                </span>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-info rounded-pill">18</span>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning rounded-pill">5</span>
-                        </td>
-                        <td>
-                            <div class="text-success fw-semibold">+$8,921</div>
-                            <small class="text-muted">+23.7%</small>
-                        </td>
-                        <td>
-                            <div class="small">Feb 03, 2024</div>
-                            <small class="text-muted">8 months ago</small>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <a href="#" class="btn btn-outline-primary">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="#" class="btn btn-outline-secondary">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#suspendUserModal">
-                                    <i class="bi bi-ban"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- User Row 3 - Inactive -->
-                    <tr class="table-secondary bg-opacity-25">
-                        <td class="px-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox">
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-secondary bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
-                                    <i class="bi bi-person-fill text-secondary"></i>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="9" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                    <p class="mb-0">No users found</p>
+                                    @if(request()->hasAny(['search', 'status', 'exchange', 'sort_by']))
+                                        <a href="{{ route('admin.users.index') }}" class="btn btn-sm btn-outline-primary mt-3">
+                                            Clear Filters
+                                        </a>
+                                    @endif
                                 </div>
-                                <div>
-                                    <div class="fw-semibold">Michael Rodriguez</div>
-                                    <small class="text-muted">michael.r@example.com</small>
-                                    <div class="small">
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">ID: 1128</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">
-                                <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Inactive
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary">
-                                <i class="bi bi-x-circle me-1"></i>Not Connected
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary rounded-pill">0</span>
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary rounded-pill">0</span>
-                        </td>
-                        <td>
-                            <div class="text-muted fw-semibold">$0</div>
-                            <small class="text-muted">0%</small>
-                        </td>
-                        <td>
-                            <div class="small">Mar 21, 2024</div>
-                            <small class="text-muted">7 months ago</small>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <a href="#" class="btn btn-outline-primary">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="#" class="btn btn-outline-secondary">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <button class="btn btn-outline-success" title="Activate">
-                                    <i class="bi bi-check-circle"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- User Row 4 -->
-                    <tr>
-                        <td class="px-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox">
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-info bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
-                                    <i class="bi bi-person-fill text-info"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-semibold">Emily Watson</div>
-                                    <small class="text-muted">emily.w@example.com</small>
-                                    <div class="small">
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">ID: 1156</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Active
-                            </span>
-                        </td>
-                        <td>
-                            <div class="d-flex gap-1">
-                                <span class="badge bg-warning bg-opacity-10 text-warning">
-                                    <i class="bi bi-currency-bitcoin me-1"></i>Binance
-                                </span>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-info rounded-pill">31</span>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning rounded-pill">12</span>
-                        </td>
-                        <td>
-                            <div class="text-success fw-semibold">+$6,134</div>
-                            <small class="text-muted">+15.8%</small>
-                        </td>
-                        <td>
-                            <div class="small">Apr 10, 2024</div>
-                            <small class="text-muted">6 months ago</small>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <a href="#" class="btn btn-outline-primary">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="#" class="btn btn-outline-secondary">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#suspendUserModal">
-                                    <i class="bi bi-ban"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- User Row 5 - Loss -->
-                    <tr>
-                        <td class="px-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox">
-                            </div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-3 flex-shrink-0">
-                                    <i class="bi bi-person-fill text-warning"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-semibold">David Kim</div>
-                                    <small class="text-muted">david.kim@example.com</small>
-                                    <div class="small">
-                                        <span class="badge bg-secondary bg-opacity-10 text-secondary">ID: 1189</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Active
-                            </span>
-                        </td>
-                        <td>
-                            <div class="d-flex gap-1">
-                                <span class="badge bg-primary bg-opacity-10 text-primary">
-                                    <i class="bi bi-coin me-1"></i>Bybit
-                                </span>
-                                <span class="badge bg-warning bg-opacity-10 text-warning">
-                                    <i class="bi bi-currency-bitcoin me-1"></i>Binance
-                                </span>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-info rounded-pill">15</span>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning rounded-pill">3</span>
-                        </td>
-                        <td>
-                            <div class="text-danger fw-semibold">-$1,245</div>
-                            <small class="text-muted">-5.2%</small>
-                        </td>
-                        <td>
-                            <div class="small">May 28, 2024</div>
-                            <small class="text-muted">5 months ago</small>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ route('admin.users.show', 3) }}" class="btn btn-outline-primary">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                <a href="{{ route('admin.users.edit', 3) }}" class="btn btn-outline-secondary">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#suspendUserModal">
-                                    <i class="bi bi-ban"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
     </div>
     
     <!-- Pagination -->
-    <div class="card-footer bg-transparent border-0 p-4">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <div class="text-muted small">
-                Showing 1 to 5 of 248 users
-            </div>
-            <nav>
-                <ul class="pagination pagination-sm mb-0">
-                    <li class="page-item disabled">
-                        <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-                    </li>
-                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link" href="#">3</a></li>
-                    <li class="page-item"><a class="page-link" href="#">4</a></li>
-                    <li class="page-item"><a class="page-link" href="#">5</a></li>
-                    <li class="page-item">
-                        <a class="page-link" href="#"><i class="bi bi-chevron-right"></i></a>
-                    </li>
-                </ul>
-            </nav>
-        </div>
-    </div>
-</div>
-
-<!-- Suspend User Modal -->
-<div class="modal fade" id="suspendUserModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0 bg-danger bg-opacity-10">
-                <h5 class="modal-title fw-bold text-danger">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Suspend User Account
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p class="mb-3">Are you sure you want to suspend this user account?</p>
-                <div class="alert alert-warning border-0 mb-3">
-                    <strong>Effects of suspension:</strong>
-                    <ul class="mb-0 mt-2 small">
-                        <li>User will be logged out immediately</li>
-                        <li>All active positions will be closed</li>
-                        <li>Trading signals will stop</li>
-                        <li>API connections will be disabled</li>
-                    </ul>
+    @if($users->hasPages())
+        <div class="card-footer bg-transparent border-0 p-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="text-muted small">
+                    Showing {{ $users->firstItem() }} to {{ $users->lastItem() }} of {{ $users->total() }} users
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Reason for suspension</label>
-                    <textarea class="form-control" rows="3" placeholder="Enter reason (optional)"></textarea>
-                </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger">
-                    <i class="bi bi-ban me-2"></i>Suspend Account
-                </button>
+                {{ $users->links() }}
             </div>
         </div>
-    </div>
+    @endif
 </div>
 
-<!-- Bulk Action Modal -->
-<div class="modal fade" id="bulkActionModal" tabindex="-1">
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-0">
-                <h5 class="modal-title fw-bold">
-                    <i class="bi bi-lightning-fill me-2"></i>Bulk Actions
+                <h5 class="modal-title fw-bold text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirm Deletion
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-3">Select an action to apply to all selected users:</p>
-                <div class="list-group">
-                    <button type="button" class="list-group-item list-group-item-action">
-                        <i class="bi bi-check-circle text-success me-2"></i>
-                        <strong>Activate Selected Users</strong>
-                        <small class="d-block text-muted">Enable trading for selected accounts</small>
-                    </button>
-                    <button type="button" class="list-group-item list-group-item-action">
-                        <i class="bi bi-pause-circle text-warning me-2"></i>
-                        <strong>Pause Trading</strong>
-                        <small class="d-block text-muted">Temporarily stop all trading activities</small>
-                    </button>
-                    <button type="button" class="list-group-item list-group-item-action">
-                        <i class="bi bi-ban text-danger me-2"></i>
-                        <strong>Suspend Accounts</strong>
-                        <small class="d-block text-muted">Disable accounts and close positions</small>
-                    </button>
-                    <button type="button" class="list-group-item list-group-item-action">
-                        <i class="bi bi-envelope text-primary me-2"></i>
-                        <strong>Send Notification</strong>
-                        <small class="d-block text-muted">Send email to selected users</small>
-                    </button>
-                    <button type="button" class="list-group-item list-group-item-action">
-                        <i class="bi bi-download text-info me-2"></i>
-                        <strong>Export Data</strong>
-                        <small class="d-block text-muted">Export selected user data to CSV</small>
-                    </button>
+                <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
+                <div class="alert alert-warning border-0 bg-warning bg-opacity-10">
+                    <i class="bi bi-info-circle me-2"></i>
+                    This action cannot be undone. All user data will be permanently deleted.
                 </div>
             </div>
             <div class="modal-footer border-0">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteUserForm" method="POST" style="display: inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>Delete User
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -612,23 +331,10 @@
         checkboxes.forEach(checkbox => checkbox.checked = this.checked);
     });
 
-    // Search functionality
-    document.getElementById('searchUsers').addEventListener('input', function(e) {
-        // Add search logic here
-        console.log('Searching for:', e.target.value);
-    });
-
-    // Filter functionality
-    document.getElementById('filterStatus').addEventListener('change', function(e) {
-        console.log('Filter by status:', e.target.value);
-    });
-
-    document.getElementById('filterExchange').addEventListener('change', function(e) {
-        console.log('Filter by exchange:', e.target.value);
-    });
-
-    document.getElementById('filterSort').addEventListener('change', function(e) {
-        console.log('Sort by:', e.target.value);
-    });
+    function confirmDelete(userId, userName) {
+        document.getElementById('deleteUserName').textContent = userName;
+        document.getElementById('deleteUserForm').action = '/admin/users/' + userId;
+        new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
+    }
 </script>
 @endpush

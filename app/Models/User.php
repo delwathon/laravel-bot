@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -11,11 +10,6 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'email',
@@ -25,21 +19,11 @@ class User extends Authenticatable
         'last_name',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -50,9 +34,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is an admin.
-     *
-     * @return bool
+     * Check if user is an admin
      */
     public function isAdmin(): bool
     {
@@ -60,9 +42,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Check if user is a regular user.
-     *
-     * @return bool
+     * Check if user is a regular user
      */
     public function isUser(): bool
     {
@@ -70,9 +50,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Get full name attribute.
-     *
-     * @return string
+     * Get full name attribute
      */
     public function getFullNameAttribute(): string
     {
@@ -81,5 +59,123 @@ class User extends Authenticatable
         }
         
         return $this->name;
+    }
+
+    /**
+     * Get the user's exchange account (Bybit only - one per user)
+     */
+    public function exchangeAccount()
+    {
+        return $this->hasOne(ExchangeAccount::class);
+    }
+
+    /**
+     * Get user's trades
+     */
+    public function trades()
+    {
+        return $this->hasMany(Trade::class);
+    }
+
+    /**
+     * Get user's positions
+     */
+    public function positions()
+    {
+        return $this->hasMany(Position::class);
+    }
+
+    /**
+     * Check if user has connected their Bybit account
+     */
+    public function hasConnectedExchange(): bool
+    {
+        return $this->exchangeAccount()->exists() && $this->exchangeAccount->isConnected();
+    }
+
+    /**
+     * Get the Bybit account
+     */
+    public function getBybitAccountAttribute()
+    {
+        return $this->exchangeAccount;
+    }
+
+    /**
+     * Get active positions
+     */
+    public function activePositions()
+    {
+        return $this->positions()->where('is_active', true);
+    }
+
+    /**
+     * Get open trades
+     */
+    public function openTrades()
+    {
+        return $this->trades()->where('status', 'open');
+    }
+
+    /**
+     * Get closed trades
+     */
+    public function closedTrades()
+    {
+        return $this->trades()->where('status', 'closed');
+    }
+
+    /**
+     * Calculate total P&L
+     */
+    public function getTotalPnlAttribute()
+    {
+        return $this->trades()
+            ->where('status', 'closed')
+            ->sum('realized_pnl');
+    }
+
+    /**
+     * Calculate win rate
+     */
+    public function getWinRateAttribute()
+    {
+        $closedTrades = $this->closedTrades()->count();
+        
+        if ($closedTrades === 0) {
+            return 0;
+        }
+
+        $winningTrades = $this->closedTrades()
+            ->where('realized_pnl', '>', 0)
+            ->count();
+
+        return round(($winningTrades / $closedTrades) * 100, 2);
+    }
+
+    /**
+     * Get trades count for today
+     */
+    public function getTodayTradesCountAttribute()
+    {
+        return $this->trades()
+            ->whereDate('created_at', today())
+            ->count();
+    }
+
+    /**
+     * Get active positions count
+     */
+    public function getActivePositionsCountAttribute()
+    {
+        return $this->activePositions()->count();
+    }
+
+    /**
+     * Get total trades count
+     */
+    public function getTotalTradesCountAttribute()
+    {
+        return $this->trades()->count();
     }
 }

@@ -6,20 +6,6 @@
 
 @section('content')
 
-@if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-
-@if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-@endif
-
 @if($exchangeAccount)
     <!-- Connected Account -->
     <div class="card border-0 shadow-sm mb-4">
@@ -84,9 +70,12 @@
                         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateApiModal">
                             <i class="bi bi-pencil me-2"></i>Update API Keys
                         </button>
-                        <button type="button" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-clockwise me-2"></i>Sync Balance
-                        </button>
+                        <form action="{{ route('user.exchanges.sync', $exchangeAccount->id) }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Sync Balance
+                            </button>
+                        </form>
                         <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#disconnectModal">
                             <i class="bi bi-x-circle me-2"></i>Disconnect
                         </button>

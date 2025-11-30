@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ExchangeAccount;
 use App\Models\User;
+use App\Services\BybitService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
@@ -204,5 +206,26 @@ class UserController extends Controller
 
         return redirect()->route('admin.users.index')
             ->with('success', "User '{$userName}' has been deleted successfully!");
+    }
+
+    public function syncBalance($exchangeAccountId)
+    {
+        try {
+            $exchangeAccount = ExchangeAccount::findOrFail($exchangeAccountId);
+            
+            $bybit = new BybitService($exchangeAccount->api_key, $exchangeAccount->api_secret);
+            $balance = $bybit->getBalance();
+            
+            $exchangeAccount->update([
+                'balance' => $balance,
+                'last_synced_at' => now(),
+            ]);
+            
+            return back()->with('success', 'Balance synced successfully! New balance: $' . number_format($balance, 2));
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to sync balance: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to sync balance: ' . $e->getMessage()]);
+        }
     }
 }

@@ -3,58 +3,106 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Trade;
+use App\Services\TradePropagationService;
 use Illuminate\Http\Request;
 
 class TradeController extends Controller
 {
-    /**
-     * Display admin trades dashboard
-     */
+    protected $tradePropagation;
+
+    public function __construct(TradePropagationService $tradePropagation)
+    {
+        $this->tradePropagation = $tradePropagation;
+    }
+
     public function index()
     {
-        // Trade statistics
+        $trades = Trade::with(['user', 'signal'])
+            ->latest()
+            ->paginate(50);
+
         $stats = [
-            'active_trades' => 0,
-            'total_volume' => 0,
-            'total_profit' => 0,
-            'win_rate' => 0,
-            'affected_users' => 0,
+            'total_trades' => Trade::count(),
+            'open_trades' => Trade::where('status', 'open')->count(),
+            'closed_trades' => Trade::where('status', 'closed')->count(),
+            'total_profit' => Trade::where('status', 'closed')->sum('realized_pnl'),
+            'today_trades' => Trade::whereDate('created_at', today())->count(),
+            'win_rate' => $this->calculateWinRate(),
         ];
-        
-        // Recent admin trades (placeholder)
-        $recentTrades = collect([]);
-        
-        return view('admin.trades.index', compact('stats', 'recentTrades'));
+
+        return view('admin.trades.index', compact('trades', 'stats'));
     }
-    
-    /**
-     * Store a new admin trade (propagates to all users)
-     */
+
     public function store(Request $request)
     {
-        // TODO: Implement admin trade creation
-        // This will:
-        // 1. Validate trade parameters
-        // 2. Create master trade record
-        // 3. Propagate to all active users
-        // 4. Execute on connected exchanges
-        
-        return redirect()->route('admin.trades.index')
-            ->with('success', 'Trade created and propagated to all users successfully!');
+        $validated = $request->validate([
+            'symbol' => 'required|string',
+            'type' => 'required|in:long,short',
+            'entry_price' => 'required|numeric|min:0',
+            'stop_loss' => 'required|numeric|min:0',
+            'take_profit' => 'required|numeric|min:0',
+            'position_size_percent' => 'nullable|numeric|min:1|max:100',
+        ]);
+
+        try {
+            $positionSize = $validated['position_size_percent'] ?? 5;
+
+            $results = $this->tradePropagation->propagateManualTrade(
+                $validated['symbol'],
+                $validated['type'],
+                $validated['entry_price'],
+                $validated['stop_loss'],
+                $validated['take_profit'],
+                $positionSize
+            );
+
+            $message = "Trade propagated: {$results['successful']} successful, {$results['failed']} failed out of {$results['total']} users.";
+
+            if ($results['failed'] > 0) {
+                $errorDetails = collect($results['errors'])->pluck('error')->unique()->implode(', ');
+                $message .= " Errors: {$errorDetails}";
+            }
+
+            return redirect()->route('admin.trades.index')
+                ->with('success', $message);
+
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to create and propagate trade: ' . $e->getMessage());
+        }
     }
-    
-    /**
-     * Close/delete an admin trade
-     */
-    public function destroy($id)
+
+    public function destroy(Trade $trade)
     {
-        // TODO: Implement trade closure
-        // This will:
-        // 1. Close the master trade
-        // 2. Close all user copies
-        // 3. Calculate final P&L
-        
-        return redirect()->route('admin.trades.index')
-            ->with('success', 'Trade closed successfully!');
+        try {
+            if ($trade->status === 'open') {
+                return back()->with('error', 'Cannot delete an open trade. Please close it first.');
+            }
+
+            $trade->delete();
+
+            return redirect()->route('admin.trades.index')
+                ->with('success', 'Trade deleted successfully.');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to delete trade: ' . $e->getMessage());
+        }
+    }
+
+    protected function calculateWinRate()
+    {
+        $closedTrades = Trade::where('status', 'closed')->count();
+
+        if ($closedTrades === 0) {
+            return 0;
+        }
+
+        $winningTrades = Trade::where('status', 'closed')
+            ->where('realized_pnl', '>', 0)
+            ->count();
+
+        return round(($winningTrades / $closedTrades) * 100, 2);
     }
 }

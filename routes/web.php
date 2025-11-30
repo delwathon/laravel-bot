@@ -40,7 +40,8 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
 // Admin Routes
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    
     // Dashboard
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     
@@ -50,10 +51,13 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+    Route::post('/users/sync-balance/{exchangeAccount}', [AdminUserController::class, 'syncBalance'])->name('users.sync-balance');
     
     // Signals
     Route::get('/signals', [AdminSignalController::class, 'index'])->name('signals.index');
     Route::post('/signals/generate', [AdminSignalController::class, 'generate'])->name('signals.generate');
+    Route::post('/signals/{signal}/execute', [AdminSignalController::class, 'execute'])->name('signals.execute');
+    Route::delete('/signals/{signal}', [AdminSignalController::class, 'cancel'])->name('signals.cancel');
     
     // Admin Trades (propagate to all users)
     Route::get('/trades', [AdminTradeController::class, 'index'])->name('trades.index');
@@ -66,8 +70,15 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     // History
     Route::get('/history', [AdminDashboardController::class, 'history'])->name('history.index');
     
-    // API Keys Management
+    // User API Keys Management (view users' API keys)
     Route::get('/api-keys', [AdminSettingsController::class, 'apiKeys'])->name('api-keys.index');
+    
+    // Admin Exchange Configuration (admin's own API keys)
+    Route::post('/api-keys', [AdminSettingsController::class, 'storeApiKey'])->name('api-keys.store');
+    Route::delete('/api-keys/{exchange}', [AdminSettingsController::class, 'deleteApiKey'])->name('api-keys.destroy');
+    Route::patch('/api-keys/{exchange}/toggle', [AdminSettingsController::class, 'toggleApiKey'])->name('api-keys.toggle');
+    // Add this route for admin balance sync
+    Route::post('/api-keys/{exchange}/sync', [AdminSettingsController::class, 'syncAdminBalance'])->name('api-keys.sync');
     
     // Analytics
     Route::get('/analytics', [AdminSettingsController::class, 'analytics'])->name('analytics.index');
@@ -81,15 +92,15 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
 // User Routes
 Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
-    // Dashboard
     Route::get('/dashboard', [UserDashboardController::class, 'index'])->name('dashboard');
     
     // Exchange Management
     Route::get('/exchanges/connect', [ExchangeController::class, 'connect'])->name('exchanges.connect');
     Route::post('/exchanges/connect', [ExchangeController::class, 'store'])->name('exchanges.store');
     Route::get('/exchanges/manage', [ExchangeController::class, 'manage'])->name('exchanges.manage');
-    Route::get('/exchanges/{exchange}/update', [ExchangeController::class, 'update'])->name('exchanges.update');
+    Route::put('/exchanges/{exchange}', [ExchangeController::class, 'update'])->name('exchanges.update');
     Route::delete('/exchanges/{exchange}', [ExchangeController::class, 'destroy'])->name('exchanges.destroy');
+    Route::post('/exchanges/{exchange}/sync', [ExchangeController::class, 'syncBalance'])->name('exchanges.sync');
     
     // Trades
     Route::get('/trades', [UserTradeController::class, 'index'])->name('trades.index');

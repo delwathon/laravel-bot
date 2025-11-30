@@ -3,33 +3,154 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdminExchangeAccount;
+use App\Models\ExchangeAccount;
+use App\Models\User;
+use App\Services\BybitService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class SettingsController extends Controller
 {
-    /**
-     * Display API keys management page
-     */
     public function apiKeys()
     {
-        // TODO: Fetch stored API keys (encrypted)
-        $exchanges = [
-            'bybit' => [
-                'name' => 'Bybit',
-                'connected' => false,
-                'api_key' => null,
-            ],
+        $bybitAccount = AdminExchangeAccount::where('exchange', 'bybit')->first();
+        
+        $adminBalance = 0;
+        if ($bybitAccount && $bybitAccount->is_active) {
+            try {
+                $bybit = new BybitService($bybitAccount->api_key, $bybitAccount->api_secret);
+                $adminBalance = $bybit->getBalance();
+                
+                $bybitAccount->update([
+                    'last_synced_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to fetch admin balance: ' . $e->getMessage());
+            }
+        }
+        
+        $userApiKeys = ExchangeAccount::with('user')
+            ->latest()
+            ->paginate(20);
+
+        $totalKeys = ExchangeAccount::count();
+        $activeKeys = ExchangeAccount::where('is_active', true)->count();
+        $inactiveKeys = ExchangeAccount::where('is_active', false)->count();
+        $totalUsers = User::where('is_admin', false)->count();
+
+        $lastSyncedAccount = ExchangeAccount::where('is_active', true)
+            ->whereNotNull('last_synced_at')
+            ->orderBy('last_synced_at', 'desc')
+            ->first();
+
+        $stats = [
+            'total_keys' => $totalKeys,
+            'active_keys' => $activeKeys,
+            'inactive_keys' => $inactiveKeys,
+            'total_users' => $totalUsers,
+            'active_percentage' => $totalKeys > 0 ? round(($activeKeys / $totalKeys) * 100, 1) : 0,
+            'last_check' => $lastSyncedAccount ? $lastSyncedAccount->last_synced_at->diffForHumans() : 'Never',
         ];
         
-        return view('admin.settings.api-keys', compact('exchanges'));
+        return view('admin.settings.api-keys', compact('bybitAccount', 'adminBalance', 'userApiKeys', 'stats'));
+    }
+
+    public function storeApiKey(Request $request)
+    {
+        $validated = $request->validate([
+            'exchange' => 'required|in:bybit',
+            'api_key' => 'required|string|max:255',
+            'api_secret' => 'required|string|max:255',
+        ]);
+
+        try {
+            $bybit = new BybitService($validated['api_key'], $validated['api_secret']);
+            
+            if (!$bybit->testConnection()) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['error' => 'Failed to connect to Bybit. Please check your API credentials.']);
+            }
+
+            AdminExchangeAccount::updateOrCreate(
+                ['exchange' => $validated['exchange']],
+                [
+                    'api_key' => $validated['api_key'],
+                    'api_secret' => $validated['api_secret'],
+                    'is_active' => true,
+                    'last_synced_at' => now(),
+                ]
+            );
+
+            return redirect()->route('admin.api-keys.index')
+                ->with('success', 'Admin API keys saved and verified successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Admin API key setup failed: ' . $e->getMessage());
+            return back()
+                ->withInput()
+                ->withErrors(['error' => 'Failed to save API keys: ' . $e->getMessage()]);
+        }
+    }
+
+    public function deleteApiKey($exchange)
+    {
+        try {
+            $account = AdminExchangeAccount::where('exchange', $exchange)->first();
+            
+            if ($account) {
+                $account->delete();
+            }
+
+            return redirect()->route('admin.api-keys.index')
+                ->with('success', 'API keys removed successfully.');
+
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Failed to remove API keys: ' . $e->getMessage()]);
+        }
+    }
+
+    public function toggleApiKey($exchange)
+    {
+        try {
+            $account = AdminExchangeAccount::where('exchange', $exchange)->firstOrFail();
+            
+            $account->update([
+                'is_active' => !$account->is_active,
+            ]);
+
+            $status = $account->is_active ? 'activated' : 'deactivated';
+
+            return back()->with('success', "API keys {$status} successfully.");
+
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Failed to toggle API keys: ' . $e->getMessage()]);
+        }
+    }
+
+    public function syncAdminBalance($exchange)
+    {
+        try {
+            $account = AdminExchangeAccount::where('exchange', $exchange)->firstOrFail();
+            
+            $bybit = new BybitService($account->api_key, $account->api_secret);
+            $balance = $bybit->getBalance();
+            
+            $account->update([
+                'last_synced_at' => now(),
+            ]);
+            
+            return back()->with('success', 'Admin balance synced successfully! Balance: $' . number_format($balance, 2));
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to sync admin balance: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to sync balance: ' . $e->getMessage()]);
+        }
     }
     
-    /**
-     * Display analytics page
-     */
     public function analytics()
     {
-        // Analytics data
         $analytics = [
             'total_volume_30d' => 0,
             'avg_win_rate' => 0,
@@ -43,14 +164,10 @@ class SettingsController extends Controller
         return view('admin.analytics.index', compact('analytics'));
     }
     
-    /**
-     * Display signal generator settings
-     */
     public function signalGenerator()
     {
-        // Current settings (will be stored in database/config later)
         $settings = [
-            'interval' => 15, // minutes
+            'interval' => 15,
             'top_signals' => 5,
             'min_confidence' => 70,
             'signal_expiry' => 30,
@@ -64,9 +181,6 @@ class SettingsController extends Controller
         return view('admin.settings.signal-generator', compact('settings'));
     }
     
-    /**
-     * Update signal generator settings
-     */
     public function updateSignalGenerator(Request $request)
     {
         $validated = $request->validate([
@@ -76,36 +190,17 @@ class SettingsController extends Controller
             'signal_expiry' => 'required|integer|min:5|max:120',
         ]);
         
-        // TODO: Store settings in database or config
-        
         return redirect()->route('admin.settings.signal-generator')
             ->with('success', 'Signal generator settings updated successfully!');
     }
-    
-    /**
-     * Display system settings
-     */
+
     public function system()
     {
-        // System settings
-        $settings = [
-            'maintenance_mode' => false,
-            'allow_new_registrations' => true,
-            'max_positions_per_user' => 20,
-            'default_leverage' => 10,
-            'auto_trading_enabled' => true,
-        ];
-        
-        return view('admin.settings.system', compact('settings'));
+        return view('admin.settings.system');
     }
-    
-    /**
-     * Update system settings
-     */
+
     public function updateSystem(Request $request)
     {
-        // TODO: Validate and store system settings
-        
         return redirect()->route('admin.settings.system')
             ->with('success', 'System settings updated successfully!');
     }

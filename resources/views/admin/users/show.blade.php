@@ -190,9 +190,12 @@
                     </div>
                 </div>
                 <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                    <button type="button" class="btn btn-outline-primary">
-                        <i class="bi bi-arrow-clockwise me-2"></i>Sync Balance
-                    </button>
+                    <form action="{{ route('admin.users.sync-balance', $user->exchangeAccount->id) }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Sync Balance
+                        </button>
+                    </form>
                 </div>
             </div>
         @else

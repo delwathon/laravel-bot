@@ -209,7 +209,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$66,450</div>
-                            <small class="text-muted">5m ago</small>
+                            <small class="text-secondary">5m ago</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-success">$66,823</div>
@@ -223,11 +223,11 @@
                             <div class="progress mt-2" style="height: 4px;">
                                 <div class="progress-bar bg-success" style="width: 68%"></div>
                             </div>
-                            <small class="text-muted">68% to TP</small>
+                            <small class="text-secondary">68% to TP</small>
                         </td>
                         <td>
                             <div class="fw-semibold">0.15 BTC</div>
-                            <small class="text-muted">~$10,023</small>
+                            <small class="text-secondary">~$10,023</small>
                         </td>
                         <td>
                             <div class="text-success fw-bold">+$279</div>
@@ -269,7 +269,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$3,245</div>
-                            <small class="text-muted">12m ago</small>
+                            <small class="text-secondary">12m ago</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-success">$3,298</div>
@@ -283,11 +283,11 @@
                             <div class="progress mt-2" style="height: 4px;">
                                 <div class="progress-bar bg-success" style="width: 47%"></div>
                             </div>
-                            <small class="text-muted">47% to TP</small>
+                            <small class="text-secondary">47% to TP</small>
                         </td>
                         <td>
                             <div class="fw-semibold">3.0 ETH</div>
-                            <small class="text-muted">~$9,894</small>
+                            <small class="text-secondary">~$9,894</small>
                         </td>
                         <td>
                             <div class="text-success fw-bold">+$159</div>
@@ -329,7 +329,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$145.80</div>
-                            <small class="text-muted">28m ago</small>
+                            <small class="text-secondary">28m ago</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-danger">$147.15</div>
@@ -347,7 +347,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">50 SOL</div>
-                            <small class="text-muted">~$7,361</small>
+                            <small class="text-secondary">~$7,361</small>
                         </td>
                         <td>
                             <div class="text-danger fw-bold">-$67</div>
@@ -389,7 +389,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$0.5234</div>
-                            <small class="text-muted">1h ago</small>
+                            <small class="text-secondary">1h ago</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-success">$0.5450</div>
@@ -403,11 +403,11 @@
                             <div class="progress mt-2" style="height: 4px;">
                                 <div class="progress-bar bg-success" style="width: 68%"></div>
                             </div>
-                            <small class="text-muted">68% to TP</small>
+                            <small class="text-secondary">68% to TP</small>
                         </td>
                         <td>
                             <div class="fw-semibold">5,000 XRP</div>
-                            <small class="text-muted">~$2,725</small>
+                            <small class="text-secondary">~$2,725</small>
                         </td>
                         <td>
                             <div class="text-success fw-bold">+$108</div>
@@ -449,7 +449,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$28.45</div>
-                            <small class="text-muted">2h ago</small>
+                            <small class="text-secondary">2h ago</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-danger">$28.12</div>
@@ -463,11 +463,11 @@
                             <div class="progress mt-2" style="height: 4px;">
                                 <div class="progress-bar bg-info" style="width: 35%"></div>
                             </div>
-                            <small class="text-muted">35% away from SL</small>
+                            <small class="text-secondary">35% away from SL</small>
                         </td>
                         <td>
                             <div class="fw-semibold">200 AVAX</div>
-                            <small class="text-muted">~$5,624</small>
+                            <small class="text-secondary">~$5,624</small>
                         </td>
                         <td>
                             <div class="text-danger fw-bold">-$66</div>

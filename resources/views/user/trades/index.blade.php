@@ -174,7 +174,7 @@
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">14:23:15</div>
-                            <small class="text-muted">Oct 25, 2024</small>
+                            <small class="text-secondary">Oct 25, 2024</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -199,7 +199,7 @@
                         </td>
                         <td>
                             <div>0.15 BTC</div>
-                            <small class="text-muted">~$10k</small>
+                            <small class="text-secondary">~$10k</small>
                         </td>
                         <td>
                             <small>2h 15m</small>
@@ -214,7 +214,7 @@
                     <tr class="table-danger bg-opacity-10">
                         <td class="px-4">
                             <div class="small fw-semibold">13:45:22</div>
-                            <small class="text-muted">Oct 25, 2024</small>
+                            <small class="text-secondary">Oct 25, 2024</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -239,7 +239,7 @@
                         </td>
                         <td>
                             <div>2.5 ETH</div>
-                            <small class="text-muted">~$8.2k</small>
+                            <small class="text-secondary">~$8.2k</small>
                         </td>
                         <td>
                             <small>45m</small>
@@ -254,7 +254,7 @@
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">12:18:05</div>
-                            <small class="text-muted">Oct 25, 2024</small>
+                            <small class="text-secondary">Oct 25, 2024</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -279,7 +279,7 @@
                         </td>
                         <td>
                             <div>50 SOL</div>
-                            <small class="text-muted">~$7.3k</small>
+                            <small class="text-secondary">~$7.3k</small>
                         </td>
                         <td>
                             <small>3h 42m</small>
@@ -294,7 +294,7 @@
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">11:32:41</div>
-                            <small class="text-muted">Oct 25, 2024</small>
+                            <small class="text-secondary">Oct 25, 2024</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -319,7 +319,7 @@
                         </td>
                         <td>
                             <div>5,000 XRP</div>
-                            <small class="text-muted">~$2.6k</small>
+                            <small class="text-secondary">~$2.6k</small>
                         </td>
                         <td>
                             <small>1h 18m</small>
@@ -334,7 +334,7 @@
                     <tr class="table-danger bg-opacity-10">
                         <td class="px-4">
                             <div class="small fw-semibold">10:15:33</div>
-                            <small class="text-muted">Oct 25, 2024</small>
+                            <small class="text-secondary">Oct 25, 2024</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -359,7 +359,7 @@
                         </td>
                         <td>
                             <div>200 AVAX</div>
-                            <small class="text-muted">~$5.7k</small>
+                            <small class="text-secondary">~$5.7k</small>
                         </td>
                         <td>
                             <small>28m</small>

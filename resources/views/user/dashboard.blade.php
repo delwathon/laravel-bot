@@ -285,7 +285,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$66,450</div>
-                            <small class="text-muted">5m ago</small>
+                            <small class="text-secondary">5m ago</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-success">$66,823</div>
@@ -326,7 +326,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$3,245</div>
-                            <small class="text-muted">12m ago</small>
+                            <small class="text-secondary">12m ago</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-success">$3,298</div>
@@ -367,7 +367,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$145.80</div>
-                            <small class="text-muted">28m ago</small>
+                            <small class="text-secondary">28m ago</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-danger">$147.15</div>

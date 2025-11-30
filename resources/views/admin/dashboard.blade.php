@@ -315,7 +315,7 @@
                                             </div>
                                             <div>
                                                 <div class="fw-bold">{{ $pair->symbol }}</div>
-                                                <small class="text-muted">{{ $pair->name }}</small>
+                                                <small class="text-secondary">{{ $pair->name }}</small>
                                             </div>
                                         </div>
                                     </td>
@@ -326,7 +326,7 @@
                                     </td>
                                     <td>
                                         <div class="fw-semibold">${{ number_format($pair->price, 2) }}</div>
-                                        <small class="text-muted">Volume: ${{ $pair->volume }}</small>
+                                        <small class="text-secondary">Volume: ${{ $pair->volume }}</small>
                                     </td>
                                     <td>
                                         <span class="badge bg-{{ $pair->change >= 0 ? 'success' : 'danger' }} bg-opacity-10 text-{{ $pair->change >= 0 ? 'success' : 'danger' }}">
@@ -346,7 +346,7 @@
                                     </td>
                                     <td class="text-end">
                                         <div class="text-{{ $pair->pnl >= 0 ? 'success' : 'danger' }} fw-bold">{{ $pair->pnl > 0 ? '+' : '' }}${{ number_format(abs($pair->pnl), 0) }}</div>
-                                        <small class="text-muted">{{ $pair->pnl_percent > 0 ? '+' : '' }}{{ $pair->pnl_percent }}%</small>
+                                        <small class="text-secondary">{{ $pair->pnl_percent > 0 ? '+' : '' }}{{ $pair->pnl_percent }}%</small>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-success bg-opacity-10 text-success">
@@ -369,7 +369,7 @@
                                     </td>
                                     <td>
                                         <div class="fw-semibold">$66,450</div>
-                                        <small class="text-muted">Volume: $2.4B</small>
+                                        <small class="text-secondary">Volume: $2.4B</small>
                                     </td>
                                     <td>
                                         <span class="badge bg-success bg-opacity-10 text-success">
@@ -389,7 +389,7 @@
                                     </td>
                                     <td class="text-end">
                                         <div class="text-success fw-bold">+$12,456</div>
-                                        <small class="text-muted">+18.3%</small>
+                                        <small class="text-secondary">+18.3%</small>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-success bg-opacity-10 text-success">
@@ -411,7 +411,7 @@
                                     </td>
                                     <td>
                                         <div class="fw-semibold">$3,245</div>
-                                        <small class="text-muted">Volume: $1.8B</small>
+                                        <small class="text-secondary">Volume: $1.8B</small>
                                     </td>
                                     <td>
                                         <span class="badge bg-success bg-opacity-10 text-success">
@@ -431,7 +431,7 @@
                                     </td>
                                     <td class="text-end">
                                         <div class="text-success fw-bold">+$8,923</div>
-                                        <small class="text-muted">+14.2%</small>
+                                        <small class="text-secondary">+14.2%</small>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-success bg-opacity-10 text-success">
@@ -453,7 +453,7 @@
                                     </td>
                                     <td>
                                         <div class="fw-semibold">$145.80</div>
-                                        <small class="text-muted">Volume: $892M</small>
+                                        <small class="text-secondary">Volume: $892M</small>
                                     </td>
                                     <td>
                                         <span class="badge bg-success bg-opacity-10 text-success">
@@ -473,7 +473,7 @@
                                     </td>
                                     <td class="text-end">
                                         <div class="text-success fw-bold">+$6,734</div>
-                                        <small class="text-muted">+12.1%</small>
+                                        <small class="text-secondary">+12.1%</small>
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-success bg-opacity-10 text-success">

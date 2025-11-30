@@ -13,7 +13,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Total Trades</div>
-                        <h3 class="fw-bold mb-0">342</h3>
+                        <h3 class="fw-bold mb-0">{{ $stats['total_trades'] }}</h3>
                     </div>
                     <div class="bg-primary bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-arrow-left-right text-primary fs-4"></i>
@@ -31,15 +31,15 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="text-muted text-uppercase small fw-bold mb-1">Winning Trades</div>
-                        <h3 class="fw-bold mb-0 text-success">234</h3>
+                        <div class="text-muted text-uppercase small fw-bold mb-1">Win Rate</div>
+                        <h3 class="fw-bold mb-0 text-success">{{ number_format($stats['win_rate'], 1) }}%</h3>
                     </div>
                     <div class="bg-success bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-check-circle-fill text-success fs-4"></i>
                     </div>
                 </div>
                 <div class="mt-2">
-                    <small class="text-success">68.4% win rate</small>
+                    <small class="text-success">{{ $stats['closed_trades'] - ($stats['closed_trades'] - ($stats['closed_trades'] * $stats['win_rate'] / 100)) }} wins</small>
                 </div>
             </div>
         </div>
@@ -50,8 +50,8 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="text-muted text-uppercase small fw-bold mb-1">Total Volume</div>
-                        <h3 class="fw-bold mb-0 text-info">$98,450</h3>
+                        <div class="text-muted text-uppercase small fw-bold mb-1">Avg P&L</div>
+                        <h3 class="fw-bold mb-0 text-info">${{ number_format(abs($stats['avg_profit']), 2) }}</h3>
                     </div>
                     <div class="bg-info bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-cash-stack text-info fs-4"></i>
@@ -70,14 +70,14 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Total P&L</div>
-                        <h3 class="fw-bold mb-0 text-success">+$4,523</h3>
+                        <h3 class="fw-bold mb-0 {{ $stats['total_profit'] >= 0 ? 'text-success' : 'text-danger' }}">{{ $stats['total_profit'] >= 0 ? '+' : '' }}${{ number_format($stats['total_profit'], 2) }}</h3>
                     </div>
-                    <div class="bg-success bg-opacity-10 p-3 rounded-3">
-                        <i class="bi bi-currency-dollar text-success fs-4"></i>
+                    <div class="bg-{{ $stats['total_profit'] >= 0 ? 'success' : 'danger' }} bg-opacity-10 p-3 rounded-3">
+                        <i class="bi bi-currency-dollar text-{{ $stats['total_profit'] >= 0 ? 'success' : 'danger' }} fs-4"></i>
                     </div>
                 </div>
                 <div class="mt-2">
-                    <small class="text-success">+12.3% ROI</small>
+                    <small class="{{ $stats['total_profit'] >= 0 ? 'text-success' : 'text-danger' }}">{{ $stats['closed_trades'] }} closed trades</small>
                 </div>
             </div>
         </div>
@@ -170,206 +170,67 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Profitable Trade -->
+                    @forelse($trades as $trade)
+                    <tr class="{{ $trade->status === 'closed' && $trade->realized_pnl < 0 ? 'table-danger bg-opacity-10' : '' }}">
+                        <td class="px-4">
+                            <div class="small fw-semibold">{{ $trade->created_at->format('H:i:s') }}</div>
+                            <small class="text-secondary">{{ $trade->created_at->format('M d, Y') }}</small>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 p-1 rounded-circle me-2">
+                                    <i class="bi bi-coin text-primary small"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold">{{ $trade->symbol }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ $trade->type === 'long' ? 'success' : 'danger' }} bg-opacity-10 text-{{ $trade->type === 'long' ? 'success' : 'danger' }}">
+                                <i class="bi bi-arrow-{{ $trade->type === 'long' ? 'up' : 'down' }}-right me-1"></i>{{ strtoupper($trade->type) }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">${{ number_format($trade->entry_price, 2) }}</div>
+                        </td>
+                        <td>
+                            @if($trade->exit_price)
+                                <div class="fw-semibold {{ $trade->realized_pnl >= 0 ? 'text-success' : 'text-danger' }}">${{ number_format($trade->exit_price, 2) }}</div>
+                            @else
+                                <div class="text-muted">-</div>
+                            @endif
+                        </td>
+                        <td>
+                            <div>{{ $trade->quantity }} {{ explode('USDT', $trade->symbol)[0] }}</div>
+                            <small class="text-secondary">~${{ number_format($trade->entry_price * $trade->quantity, 0) }}</small>
+                        </td>
+                        <td>
+                            @if($trade->closed_at && $trade->opened_at)
+                                <small>{{ $trade->opened_at->diffForHumans($trade->closed_at, true) }}</small>
+                            @else
+                                <small>-</small>
+                            @endif
+                        </td>
+                        <td class="text-end">
+                            @if($trade->status === 'closed')
+                                <div class="{{ $trade->realized_pnl >= 0 ? 'text-success' : 'text-danger' }} fw-bold">{{ $trade->realized_pnl >= 0 ? '+' : '' }}${{ number_format($trade->realized_pnl, 2) }}</div>
+                                <small class="{{ $trade->realized_pnl >= 0 ? 'text-success' : 'text-danger' }}">{{ $trade->realized_pnl >= 0 ? '+' : '' }}{{ number_format($trade->realized_pnl_percent, 1) }}%</small>
+                            @else
+                                <span class="badge bg-info">Open</span>
+                            @endif
+                        </td>
+                    </tr>
+                    @empty
                     <tr>
-                        <td class="px-4">
-                            <div class="small fw-semibold">14:23:15</div>
-                            <small class="text-secondary">Oct 25, 2024</small>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-warning bg-opacity-10 p-1 rounded-circle me-2">
-                                    <i class="bi bi-currency-bitcoin text-warning small"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-semibold">BTCUSDT</div>
-                                </div>
+                        <td colspan="8" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                No trades yet
                             </div>
                         </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-arrow-up-right me-1"></i>LONG
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$66,450</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold text-success">$67,200</div>
-                        </td>
-                        <td>
-                            <div>0.15 BTC</div>
-                            <small class="text-secondary">~$10k</small>
-                        </td>
-                        <td>
-                            <small>2h 15m</small>
-                        </td>
-                        <td class="text-end">
-                            <div class="text-success fw-bold">+$750</div>
-                            <small class="text-success">+7.5%</small>
-                        </td>
                     </tr>
-
-                    <!-- Loss Trade -->
-                    <tr class="table-danger bg-opacity-10">
-                        <td class="px-4">
-                            <div class="small fw-semibold">13:45:22</div>
-                            <small class="text-secondary">Oct 25, 2024</small>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-info bg-opacity-10 p-1 rounded-circle me-2">
-                                    <i class="bi bi-currency-exchange text-info small"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-semibold">ETHUSDT</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-danger bg-opacity-10 text-danger">
-                                <i class="bi bi-arrow-down-right me-1"></i>SHORT
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$3,245</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold text-danger">$3,298</div>
-                        </td>
-                        <td>
-                            <div>2.5 ETH</div>
-                            <small class="text-secondary">~$8.2k</small>
-                        </td>
-                        <td>
-                            <small>45m</small>
-                        </td>
-                        <td class="text-end">
-                            <div class="text-danger fw-bold">-$132</div>
-                            <small class="text-danger">-1.6%</small>
-                        </td>
-                    </tr>
-
-                    <!-- Profitable Trade -->
-                    <tr>
-                        <td class="px-4">
-                            <div class="small fw-semibold">12:18:05</div>
-                            <small class="text-secondary">Oct 25, 2024</small>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-purple bg-opacity-10 p-1 rounded-circle me-2" style="background-color: rgba(139, 92, 246, 0.1) !important;">
-                                    <i class="bi bi-coin small" style="color: #8b5cf6;"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-semibold">SOLUSDT</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-arrow-up-right me-1"></i>LONG
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$145.80</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold text-success">$149.50</div>
-                        </td>
-                        <td>
-                            <div>50 SOL</div>
-                            <small class="text-secondary">~$7.3k</small>
-                        </td>
-                        <td>
-                            <small>3h 42m</small>
-                        </td>
-                        <td class="text-end">
-                            <div class="text-success fw-bold">+$185</div>
-                            <small class="text-success">+2.5%</small>
-                        </td>
-                    </tr>
-
-                    <!-- Profitable Trade -->
-                    <tr>
-                        <td class="px-4">
-                            <div class="small fw-semibold">11:32:41</div>
-                            <small class="text-secondary">Oct 25, 2024</small>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-success bg-opacity-10 p-1 rounded-circle me-2">
-                                    <i class="bi bi-currency-dollar text-success small"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-semibold">XRPUSDT</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-arrow-up-right me-1"></i>LONG
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$0.5234</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold text-success">$0.5450</div>
-                        </td>
-                        <td>
-                            <div>5,000 XRP</div>
-                            <small class="text-secondary">~$2.6k</small>
-                        </td>
-                        <td>
-                            <small>1h 18m</small>
-                        </td>
-                        <td class="text-end">
-                            <div class="text-success fw-bold">+$108</div>
-                            <small class="text-success">+4.1%</small>
-                        </td>
-                    </tr>
-
-                    <!-- Loss Trade -->
-                    <tr class="table-danger bg-opacity-10">
-                        <td class="px-4">
-                            <div class="small fw-semibold">10:15:33</div>
-                            <small class="text-secondary">Oct 25, 2024</small>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-danger bg-opacity-10 p-1 rounded-circle me-2">
-                                    <i class="bi bi-coin text-danger small"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-semibold">AVAXUSDT</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-danger bg-opacity-10 text-danger">
-                                <i class="bi bi-arrow-down-right me-1"></i>SHORT
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$28.45</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold text-danger">$28.90</div>
-                        </td>
-                        <td>
-                            <div>200 AVAX</div>
-                            <small class="text-secondary">~$5.7k</small>
-                        </td>
-                        <td>
-                            <small>28m</small>
-                        </td>
-                        <td class="text-end">
-                            <div class="text-danger fw-bold">-$90</div>
-                            <small class="text-danger">-1.6%</small>
-                        </td>
-                    </tr>
-
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -379,22 +240,10 @@
     <div class="card-footer bg-transparent border-0 p-4">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div class="text-muted small">
-                Showing 1 to 5 of 342 trades
+                Showing {{ $trades->firstItem() ?? 0 }} to {{ $trades->lastItem() ?? 0 }} of {{ $trades->total() }} trades
             </div>
             <nav>
-                <ul class="pagination pagination-sm mb-0">
-                    <li class="page-item disabled">
-                        <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-                    </li>
-                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link" href="#">3</a></li>
-                    <li class="page-item"><a class="page-link" href="#">...</a></li>
-                    <li class="page-item"><a class="page-link" href="#">69</a></li>
-                    <li class="page-item">
-                        <a class="page-link" href="#"><i class="bi bi-chevron-right"></i></a>
-                    </li>
-                </ul>
+                {{ $trades->links() }}
             </nav>
         </div>
     </div>

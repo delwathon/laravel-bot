@@ -101,7 +101,7 @@
                     <label class="form-label fw-semibold">Change Password</label>
                     <p class="text-muted small">Leave blank to keep your current password</p>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label for="current_password" class="form-label fw-semibold">Current Password</label>
                     <div class="input-group">
                         <input type="password" class="form-control" id="current_password" name="current_password">
@@ -110,8 +110,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="col-md-6"></div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label for="new_password" class="form-label fw-semibold">New Password</label>
                     <div class="input-group">
                         <input type="password" class="form-control" id="new_password" name="new_password">
@@ -121,7 +120,7 @@
                     </div>
                     <div class="form-text small">Minimum 8 characters</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label for="new_password_confirmation" class="form-label fw-semibold">Confirm New Password</label>
                     <div class="input-group">
                         <input type="password" class="form-control" id="new_password_confirmation" name="new_password_confirmation">
@@ -294,7 +293,7 @@
         <div class="card-header bg-transparent border-0 p-4">
             <div class="d-flex justify-content-between align-items-center">
                 <h5 class="fw-bold mb-0">
-                    <i class="bi bi-key me-2"></i>Connected Exchanges
+                    <i class="bi bi-key me-2"></i>Connected Exchange
                 </h5>
                 <a href="{{ route('user.exchanges.manage') }}" class="btn btn-outline-primary">
                     <i class="bi bi-plus-circle me-2"></i>Add Exchange
@@ -354,19 +353,19 @@
             <div class="row g-4">
                 <div class="col-md-3">
                     <div class="text-muted text-uppercase small mb-1">Total Trades</div>
-                    <div class="fw-bold fs-4">342</div>
+                    <div class="fw-bold fs-4">{{ auth()->user()->total_trades_count }}</div>
                 </div>
                 <div class="col-md-3">
                     <div class="text-muted text-uppercase small mb-1">Win Rate</div>
-                    <div class="fw-bold fs-4 text-success">68.4%</div>
+                    <div class="fw-bold fs-4 text-success">{{ number_format(auth()->user()->win_rate, 1) }}%</div>
                 </div>
                 <div class="col-md-3">
                     <div class="text-muted text-uppercase small mb-1">Total P&L</div>
-                    <div class="fw-bold fs-4 text-success">+$4,523</div>
+                    <div class="fw-bold fs-4 {{ auth()->user()->total_pnl >= 0 ? 'text-success' : 'text-danger' }}">{{ auth()->user()->total_pnl >= 0 ? '+' : '' }}${{ number_format(auth()->user()->total_pnl, 2) }}</div>
                 </div>
                 <div class="col-md-3">
                     <div class="text-muted text-uppercase small mb-1">Active Positions</div>
-                    <div class="fw-bold fs-4 text-info">8</div>
+                    <div class="fw-bold fs-4 text-info">{{ auth()->user()->active_positions_count }}</div>
                 </div>
             </div>
         </div>

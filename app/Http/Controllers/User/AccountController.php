@@ -9,9 +9,6 @@ use Illuminate\Validation\Rules;
 
 class AccountController extends Controller
 {
-    /**
-     * Display account settings
-     */
     public function settings()
     {
         $user = auth()->user();
@@ -19,46 +16,34 @@ class AccountController extends Controller
         return view('user.account.settings', compact('user'));
     }
 
-    /**
-     * Update account information
-     */
     public function update(Request $request)
     {
         $user = auth()->user();
-
+        
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'current_password' => ['nullable', 'required_with:new_password'],
+            'new_password' => ['nullable', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user->update([
-            'first_name' => $validated['first_name'],
-            'last_name' => $validated['last_name'],
-            'email' => $validated['email'],
-            'name' => $validated['first_name'] . ' ' . $validated['last_name'],
-        ]);
+        $user->first_name = $validated['first_name'];
+        $user->last_name = $validated['last_name'];
+        $user->name = $validated['first_name'] . ' ' . $validated['last_name'];
+        $user->email = $validated['email'];
 
-        // Handle password update if provided
         if ($request->filled('current_password')) {
-            $request->validate([
-                'current_password' => ['required'],
-                'new_password' => ['required', 'min:8', 'confirmed', Rules\Password::defaults()],
-            ]);
-
             if (!Hash::check($request->current_password, $user->password)) {
                 return back()->withErrors(['current_password' => 'Current password is incorrect']);
             }
-
-            $user->update([
-                'password' => Hash::make($request->new_password),
-            ]);
             
-            return redirect()->route('user.account.settings')
-                ->with('success', 'Account and password updated successfully!');
+            $user->password = Hash::make($validated['new_password']);
         }
 
+        $user->save();
+
         return redirect()->route('user.account.settings')
-            ->with('success', 'Account updated successfully!');
+            ->with('success', 'Account settings updated successfully!');
     }
 }

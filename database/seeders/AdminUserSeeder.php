@@ -40,7 +40,7 @@ class AdminUserSeeder extends Seeder
             'name' => 'Adeshina Ajobo',
             'first_name' => 'Adeshina',
             'last_name' => 'Ajobo',
-            'email' => 'adshinaajobo@gmail.com',
+            'email' => 'adeshinaajobo@gmail.com',
             'password' => Hash::make('password'),
             'is_admin' => false,
             'email_verified_at' => now(),
@@ -59,7 +59,7 @@ class AdminUserSeeder extends Seeder
         $this->command->info('Admin and test users created successfully!');
         $this->command->info('Admin: admin@cryptobot.com / password');
         $this->command->info('User: younghardehlaja@gmail.com / password');
-        $this->command->info('User: adshinaajobo@gmail.com / password');
+        $this->command->info('User: adeshinaajobo@gmail.com / password');
         $this->command->info('User: celebritytreatz@gmail.com / password');
     }
 }

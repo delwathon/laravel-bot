@@ -13,12 +13,8 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Real user statistics
         $totalUsers = User::where('is_admin', false)->count();
-        $adminCount = User::where('is_admin', true)->count();
-        $totalAccounts = User::count();
         
-        // Calculate user growth
         $lastMonthUsers = User::where('is_admin', false)
             ->where('created_at', '>=', now()->subMonth())
             ->count();
@@ -26,116 +22,77 @@ class DashboardController extends Controller
             ? round(($lastMonthUsers / $totalUsers) * 100, 1) 
             : 0;
         
-        // Recent users
         $recentUsers = User::where('is_admin', false)
+            ->with('exchangeAccount')
             ->latest()
             ->take(10)
             ->get();
         
-        // Real trading statistics
         $activeTrades = Trade::where('status', 'open')->count();
         $totalProfit = Trade::where('status', 'closed')->sum('realized_pnl');
         $todaySignals = Signal::whereDate('created_at', today())->count();
         
-        // Calculate changes from yesterday
         $yesterdayTrades = Trade::where('status', 'open')
             ->whereDate('created_at', today()->subDay())
             ->count();
         $tradesChange = $yesterdayTrades > 0 
             ? round((($activeTrades - $yesterdayTrades) / $yesterdayTrades) * 100, 1)
-            : 0;
+            : ($activeTrades > 0 ? 100 : 0);
         
         $yesterdayProfit = Trade::where('status', 'closed')
             ->whereDate('closed_at', today()->subDay())
             ->sum('realized_pnl');
         $profitChange = $yesterdayProfit > 0
-            ? round((($totalProfit - $yesterdayProfit) / abs($yesterdayProfit)) * 100, 1)
-            : 0;
+            ? round((($totalProfit - $yesterdayProfit) / $yesterdayProfit) * 100, 1)
+            : ($totalProfit > 0 ? 100 : 0);
         
-        // Top performing trading pairs
-        $topPairs = Trade::selectRaw('symbol, 
-            COUNT(*) as trades_count,
-            AVG(CASE WHEN realized_pnl > 0 THEN 1 ELSE 0 END) * 100 as win_rate,
-            SUM(realized_pnl) as total_pnl,
-            SUM(realized_pnl_percent) / COUNT(*) as avg_pnl_percent
-        ')
-            ->where('status', 'closed')
-            ->groupBy('symbol')
-            ->orderByDesc('total_pnl')
-            ->limit(5)
-            ->get()
-            ->map(function($pair) {
-                // Get latest price (from most recent trade)
-                $latestTrade = Trade::where('symbol', $pair->symbol)
-                    ->latest()
-                    ->first();
-                
-                return (object) [
-                    'symbol' => $pair->symbol,
-                    'name' => str_replace('USDT', '', $pair->symbol),
-                    'icon' => $this->getIconForSymbol($pair->symbol),
-                    'color' => $this->getColorForSymbol($pair->symbol),
-                    'exchange' => 'Bybit',
-                    'exchange_color' => 'primary',
-                    'price' => $latestTrade ? $latestTrade->entry_price : 0,
-                    'volume' => '-',
-                    'change' => 0,
-                    'trades_count' => $pair->trades_count,
-                    'win_rate' => round($pair->win_rate, 0),
-                    'pnl' => $pair->total_pnl,
-                    'pnl_percent' => round($pair->avg_pnl_percent, 1),
-                ];
-            });
+        $yesterdaySignals = Signal::whereDate('created_at', today()->subDay())->count();
+        $signalsChange = $yesterdaySignals > 0
+            ? round((($todaySignals - $yesterdaySignals) / $yesterdaySignals) * 100, 1)
+            : ($todaySignals > 0 ? 100 : 0);
+        
+        $connectedUsers = User::where('is_admin', false)
+            ->whereHas('exchangeAccount')
+            ->count();
+        $connectionRate = $totalUsers > 0 
+            ? round(($connectedUsers / $totalUsers) * 100, 1)
+            : 0;
         
         return view('admin.dashboard', compact(
             'totalUsers',
-            'adminCount',
-            'totalAccounts',
-            'activeTrades',
-            'totalProfit',
-            'todaySignals',
-            'profitChange',
-            'tradesChange',
             'userGrowthPercent',
             'recentUsers',
-            'topPairs'
+            'activeTrades',
+            'tradesChange',
+            'totalProfit',
+            'profitChange',
+            'todaySignals',
+            'signalsChange',
+            'connectedUsers',
+            'connectionRate'
         ));
     }
-    
-    /**
-     * Get icon class for symbol
-     */
-    private function getIconForSymbol($symbol)
-    {
-        $icons = [
-            'BTCUSDT' => 'currency-bitcoin',
-            'ETHUSDT' => 'currency-exchange',
-            'SOLUSDT' => 'coin',
-            'BNBUSDT' => 'currency-dollar',
-            'XRPUSDT' => 'graph-up',
-        ];
-        
-        return $icons[$symbol] ?? 'currency-exchange';
-    }
-    
-    /**
-     * Get color for symbol
-     */
-    private function getColorForSymbol($symbol)
-    {
-        $colors = [
-            'BTCUSDT' => 'warning',
-            'ETHUSDT' => 'info',
-            'SOLUSDT' => 'purple',
-            'BNBUSDT' => 'warning',
-            'XRPUSDT' => 'primary',
-        ];
-        
-        return $colors[$symbol] ?? 'primary';
-    }
-    
+
     public function history()
     {
-        return view('admin.history.index');
+        $trades = Trade::with(['user', 'signal'])
+            ->where('status', 'closed')
+            ->latest('closed_at')
+            ->paginate(50);
+
+        $stats = [
+            'total_trades' => Trade::where('status', 'closed')->count(),
+            'total_profit' => Trade::where('status', 'closed')->sum('realized_pnl'),
+            'winning_trades' => Trade::where('status', 'closed')->where('realized_pnl', '>', 0)->count(),
+            'losing_trades' => Trade::where('status', 'closed')->where('realized_pnl', '<', 0)->count(),
+            'avg_profit' => Trade::where('status', 'closed')->avg('realized_pnl'),
+            'win_rate' => 0,
+        ];
+
+        if ($stats['total_trades'] > 0) {
+            $stats['win_rate'] = round(($stats['winning_trades'] / $stats['total_trades']) * 100, 2);
+        }
+
+        return view('admin.history.index', compact('trades', 'stats'));
     }
 }

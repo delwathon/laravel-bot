@@ -22,17 +22,17 @@
                 <div class="d-flex gap-3">
                     <div>
                         <div class="text-white text-opacity-75 small">Active Positions</div>
-                        <div class="fw-bold fs-5">8</div>
+                        <div class="fw-bold fs-5">{{ $stats['active_positions'] }}</div>
                     </div>
                     <div class="vr"></div>
                     <div>
                         <div class="text-white text-opacity-75 small">Total Value</div>
-                        <div class="fw-bold fs-5">$45,230</div>
+                        <div class="fw-bold fs-5">${{ number_format($stats['total_value'], 0) }}</div>
                     </div>
                     <div class="vr"></div>
                     <div>
                         <div class="text-white text-opacity-75 small">Unrealized P&L</div>
-                        <div class="fw-bold fs-5">+$1,234</div>
+                        <div class="fw-bold fs-5 {{ $stats['unrealized_pnl'] >= 0 ? 'text-success' : 'text-danger' }}">{{ $stats['unrealized_pnl'] >= 0 ? '+' : '' }}${{ number_format($stats['unrealized_pnl'], 2) }}</div>
                     </div>
                 </div>
             </div>
@@ -58,14 +58,14 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Profitable</div>
-                        <h4 class="fw-bold mb-0 text-success">6</h4>
+                        <h4 class="fw-bold mb-0 text-success">{{ $positions->where('unrealized_pnl', '>', 0)->count() }}</h4>
                     </div>
                     <div class="bg-success bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-arrow-up text-success fs-5"></i>
                     </div>
                 </div>
                 <div class="mt-2">
-                    <span class="badge bg-success bg-opacity-10 text-success">+$1,456</span>
+                    <span class="badge bg-success bg-opacity-10 text-success">+${{ number_format($positions->where('unrealized_pnl', '>', 0)->sum('unrealized_pnl'), 2) }}</span>
                 </div>
             </div>
         </div>
@@ -77,14 +77,14 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Losing</div>
-                        <h4 class="fw-bold mb-0 text-danger">2</h4>
+                        <h4 class="fw-bold mb-0 text-danger">{{ $positions->where('unrealized_pnl', '<', 0)->count() }}</h4>
                     </div>
                     <div class="bg-danger bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-arrow-down text-danger fs-5"></i>
                     </div>
                 </div>
                 <div class="mt-2">
-                    <span class="badge bg-danger bg-opacity-10 text-danger">-$222</span>
+                    <span class="badge bg-danger bg-opacity-10 text-danger">${{ number_format($positions->where('unrealized_pnl', '<', 0)->sum('unrealized_pnl'), 2) }}</span>
                 </div>
             </div>
         </div>
@@ -95,15 +95,15 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="text-muted text-uppercase small fw-bold mb-1">At Risk</div>
-                        <h4 class="fw-bold mb-0 text-warning">1</h4>
+                        <div class="text-muted text-uppercase small fw-bold mb-1">Margin Used</div>
+                        <h4 class="fw-bold mb-0 text-warning">${{ number_format($stats['margin_used'], 0) }}</h4>
                     </div>
                     <div class="bg-warning bg-opacity-10 p-3 rounded-3">
-                        <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+                        <i class="bi bi-pie-chart text-warning fs-5"></i>
                     </div>
                 </div>
                 <div class="mt-2">
-                    <small class="text-muted">Near stop loss</small>
+                    <small class="text-muted">Available: ${{ number_format($stats['margin_available'], 0) }}</small>
                 </div>
             </div>
         </div>
@@ -114,15 +114,15 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="text-muted text-uppercase small fw-bold mb-1">Last Check</div>
-                        <h4 class="fw-bold mb-0 text-info">5s ago</h4>
+                        <div class="text-muted text-uppercase small fw-bold mb-1">P&L %</div>
+                        <h4 class="fw-bold mb-0 {{ $stats['unrealized_pnl_percent'] >= 0 ? 'text-success' : 'text-danger' }}">{{ $stats['unrealized_pnl_percent'] >= 0 ? '+' : '' }}{{ number_format($stats['unrealized_pnl_percent'], 2) }}%</h4>
                     </div>
                     <div class="bg-info bg-opacity-10 p-3 rounded-3">
-                        <i class="bi bi-clock-history text-info fs-5"></i>
+                        <i class="bi bi-percent text-info fs-5"></i>
                     </div>
                 </div>
                 <div class="mt-2">
-                    <small class="text-muted">Auto-refresh: ON</small>
+                    <small class="text-muted">Overall return</small>
                 </div>
             </div>
         </div>
@@ -151,7 +151,7 @@
             <div class="col-lg-3">
                 <input type="text" class="form-select" placeholder="Search pair..." id="searchPair">
             </div>
-            <div class="col-lg-">
+            <div class="col-lg-2">
                 <button class="btn btn-outline-secondary w-100" onclick="location.reload()">
                     <i class="bi bi-arrow-clockwise me-1"></i>Refresh
                 </button>
@@ -190,9 +190,88 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Position 1 - Profitable -->
+                    @forelse($positions as $position)
                     <tr>
                         <td class="px-4">
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-2">
+                                    <i class="bi bi-coin text-primary"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ $position->symbol }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ $position->side === 'long' ? 'success' : 'danger' }} bg-opacity-10 text-{{ $position->side === 'long' ? 'success' : 'danger' }}">
+                                <i class="bi bi-arrow-{{ $position->side === 'long' ? 'up' : 'down' }}-right me-1"></i>{{ strtoupper($position->side) }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">${{ number_format($position->entry_price, 2) }}</div>
+                            <small class="text-secondary">{{ $position->opened_at ? $position->opened_at->diffForHumans() : '-' }}</small>
+                        </td>
+                        <td>
+                            <div class="fw-semibold {{ $position->unrealized_pnl >= 0 ? 'text-success' : 'text-danger' }}">${{ number_format($position->current_price, 2) }}</div>
+                            <small class="{{ $position->unrealized_pnl >= 0 ? 'text-success' : 'text-danger' }}">{{ $position->unrealized_pnl >= 0 ? '+' : '' }}{{ number_format((($position->current_price - $position->entry_price) / $position->entry_price) * 100, 2) }}%</small>
+                        </td>
+                        <td>
+                            <div class="small">
+                                <div class="text-success mb-1">TP: ${{ number_format($position->take_profit, 2) }}</div>
+                                <div class="text-danger">SL: ${{ number_format($position->stop_loss, 2) }}</div>
+                            </div>
+                            @php
+                                $totalRange = abs($position->take_profit - $position->stop_loss);
+                                $currentProgress = abs($position->current_price - $position->stop_loss);
+                                $progressPercent = $totalRange > 0 ? ($currentProgress / $totalRange) * 100 : 0;
+                            @endphp
+                            <div class="progress mt-2" style="height: 4px;">
+                                <div class="progress-bar {{ $position->unrealized_pnl >= 0 ? 'bg-success' : 'bg-danger' }}" style="width: {{ min(100, max(0, $progressPercent)) }}%"></div>
+                            </div>
+                            <small class="text-secondary">{{ number_format($progressPercent, 0) }}% to TP</small>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">{{ $position->quantity }} {{ explode('USDT', $position->symbol)[0] }}</div>
+                            <small class="text-secondary">~${{ number_format($position->entry_price * $position->quantity, 0) }}</small>
+                        </td>
+                        <td>
+                            <div class="{{ $position->unrealized_pnl >= 0 ? 'text-success' : 'text-danger' }} fw-bold">{{ $position->unrealized_pnl >= 0 ? '+' : '' }}${{ number_format($position->unrealized_pnl, 2) }}</div>
+                            <small class="{{ $position->unrealized_pnl >= 0 ? 'text-success' : 'text-danger' }}">{{ $position->unrealized_pnl >= 0 ? '+' : '' }}{{ number_format($position->unrealized_pnl_percent, 2) }}%</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Active
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-warning" title="Modify" data-bs-toggle="modal" data-bs-target="#modifyPositionModal">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" title="Close" data-bs-toggle="modal" data-bs-target="#closePositionModal">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="9" class="text-center py-5">
+                            <div class="text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                No active positions
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Close Position Modal -->
                             <div class="d-flex align-items-center">
                                 <div class="bg-warning bg-opacity-10 p-2 rounded-circle me-2">
                                     <i class="bi bi-currency-bitcoin text-warning"></i>

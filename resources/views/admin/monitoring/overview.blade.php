@@ -145,15 +145,7 @@
                 <label class="form-label fw-semibold small">User Filter</label>
                 <input type="text" class="form-control" placeholder="Search by user name or ID...">
             </div>
-            <div class="col-lg-2">
-                <label class="form-label fw-semibold small">Exchange</label>
-                <select class="form-select">
-                    <option value="">All Exchanges</option>
-                    <option value="bybit">Bybit</option>
-                    <option value="binance">Binance</option>
-                </select>
-            </div>
-            <div class="col-lg-2">
+            <div class="col-lg-3">
                 <label class="form-label fw-semibold small">Status</label>
                 <select class="form-select">
                     <option value="">All Status</option>
@@ -162,13 +154,13 @@
                     <option value="at_risk">At Risk</option>
                 </select>
             </div>
-            <div class="col-lg-2">
+            <div class="col-lg-3">
                 <label class="form-label fw-semibold small">Pair</label>
                 <select class="form-select">
                     <option value="">All Pairs</option>
-                    <option value="BTCUSDT">BTC/USDT</option>
-                    <option value="ETHUSDT">ETH/USDT</option>
-                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="BTCUSDT">BTCUSDT</option>
+                    <option value="ETHUSDT">ETHUSDT</option>
+                    <option value="SOLUSDT">SOLUSDT</option>
                 </select>
             </div>
             <div class="col-lg-3">
@@ -229,7 +221,6 @@
                                 </div>
                                 <div>
                                     <div class="fw-semibold">John Doe</div>
-                                    <small class="text-muted">ID: 1043</small>
                                 </div>
                             </div>
                         </td>
@@ -239,8 +230,7 @@
                                     <i class="bi bi-currency-bitcoin text-warning"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">BTC/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-bold">BTCUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -251,7 +241,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$66,450</div>
-                            <small class="text-muted">5 min ago</small>
+                            <small class="text-secondary">5 min ago</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-success">$67,185</div>
@@ -264,18 +254,17 @@
                             </div>
                         </td>
                         <td>
-                            <div class="text-success fw-bold">+$735</div>
-                            <small class="text-success">+5.53%</small>
+                            <div class="text-success fw-bold">+$735 <small class="text-success">(+5.53%)</small></div>
                             <div class="progress mt-1" style="height: 4px;">
                                 <div class="progress-bar bg-success" style="width: 97%"></div>
                             </div>
-                            <small class="text-muted">97% to TP</small>
+                            <small class="text-success">97% to TP</small>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
                                 <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Active
                             </span>
-                            <div class="small text-muted">Near TP!</div>
+                            <div class="small text-success">Near TP!</div>
                         </td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
@@ -301,7 +290,6 @@
                                 </div>
                                 <div>
                                     <div class="fw-semibold">Sarah Chen</div>
-                                    <small class="text-muted">ID: 1092</small>
                                 </div>
                             </div>
                         </td>
@@ -311,8 +299,7 @@
                                     <i class="bi bi-currency-exchange text-info"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">ETH/USDT</div>
-                                    <small class="text-muted">Binance</small>
+                                    <div class="fw-bold">ETHUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -336,18 +323,17 @@
                             </div>
                         </td>
                         <td>
-                            <div class="text-success fw-bold">+$186</div>
-                            <small class="text-success">+2.86%</small>
+                            <div class="text-success fw-bold">+$186<small class="text-success">(+2.86%)</small></div>
                             <div class="progress mt-1" style="height: 4px;">
                                 <div class="progress-bar bg-success" style="width: 47%"></div>
                             </div>
-                            <small class="text-muted">47% to TP</small>
+                            <small class="text-secondary">47% to TP</small>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
                                 <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Active
                             </span>
-                            <div class="small text-muted">Healthy</div>
+                            <div class="small text-secondary">Healthy</div>
                         </td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
@@ -373,7 +359,6 @@
                                 </div>
                                 <div>
                                     <div class="fw-semibold">Michael Rodriguez</div>
-                                    <small class="text-muted">ID: 1128</small>
                                 </div>
                             </div>
                         </td>
@@ -383,8 +368,7 @@
                                     <i class="bi bi-coin" style="color: #8b5cf6;"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">SOL/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-bold">SOLUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -395,7 +379,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$145.80</div>
-                            <small class="text-muted">28 min ago</small>
+                            <small class="text-secondary">28 min ago</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-danger">$147.15</div>
@@ -408,8 +392,7 @@
                             </div>
                         </td>
                         <td>
-                            <div class="text-danger fw-bold">-$135</div>
-                            <small class="text-danger">-1.85%</small>
+                            <div class="text-danger fw-bold">-$135 <small class="text-danger">(-1.85%)</small></div>
                             <div class="progress mt-1" style="height: 4px;">
                                 <div class="progress-bar bg-danger" style="width: 79%"></div>
                             </div>
@@ -445,7 +428,6 @@
                                 </div>
                                 <div>
                                     <div class="fw-semibold">Emily Watson</div>
-                                    <small class="text-muted">ID: 1156</small>
                                 </div>
                             </div>
                         </td>
@@ -455,8 +437,7 @@
                                     <i class="bi bi-currency-dollar text-success"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">XRP/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-bold">XRPUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -467,11 +448,11 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$0.5234</div>
-                            <small class="text-muted">45 min ago</small>
+                            <small class="text-secondary">45 min ago</small>
                         </td>
                         <td>
-                            <div class="fw-semibold text-muted">—</div>
-                            <small class="text-muted">No data</small>
+                            <div class="fw-semibold text-secondary">—</div>
+                            <small class="text-secondary">No data</small>
                         </td>
                         <td>
                             <div class="small">
@@ -480,8 +461,8 @@
                             </div>
                         </td>
                         <td>
-                            <div class="text-muted fw-bold">—</div>
-                            <small class="text-muted">Unknown</small>
+                            <div class="text-secondary fw-bold">—</div>
+                            <small class="text-secondary">Unknown</small>
                         </td>
                         <td>
                             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
@@ -513,7 +494,6 @@
                                 </div>
                                 <div>
                                     <div class="fw-semibold">David Kim</div>
-                                    <small class="text-muted">ID: 1189</small>
                                 </div>
                             </div>
                         </td>
@@ -523,8 +503,7 @@
                                     <i class="bi bi-coin text-danger"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">AVAX/USDT</div>
-                                    <small class="text-muted">Binance</small>
+                                    <div class="fw-bold">AVAXUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -535,7 +514,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$28.45</div>
-                            <small class="text-muted">1h ago</small>
+                            <small class="text-secondary">1h ago</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-success">$29.12</div>
@@ -548,18 +527,17 @@
                             </div>
                         </td>
                         <td>
-                            <div class="text-success fw-bold">+$402</div>
-                            <small class="text-success">+7.08%</small>
+                            <div class="text-success fw-bold">+$402 <small class="text-success">(+7.08%)</small></div>
                             <div class="progress mt-1" style="height: 4px;">
                                 <div class="progress-bar bg-success" style="width: 49%"></div>
                             </div>
-                            <small class="text-muted">49% to TP</small>
+                            <small class="text-secondary">49% to TP</small>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
                                 <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Active
                             </span>
-                            <div class="small text-muted">Healthy</div>
+                            <div class="small text-secondary">Healthy</div>
                         </td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">

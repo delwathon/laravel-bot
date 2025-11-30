@@ -91,7 +91,7 @@
 <!-- Charts Row -->
 <div class="row g-3 mb-4">
     <!-- P&L Chart -->
-    <div class="col-lg-8">
+    <div class="col-lg-12">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-transparent border-0 p-4">
                 <div class="d-flex justify-content-between align-items-center">
@@ -117,7 +117,10 @@
             </div>
         </div>
     </div>
+</div>
 
+<!-- Performance Metrics -->
+<div class="row g-3 mb-4">
     <!-- Distribution Chart -->
     <div class="col-lg-4">
         <div class="card border-0 shadow-sm">
@@ -146,11 +149,8 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- Performance Metrics -->
-<div class="row g-3 mb-4">
-    <div class="col-lg-6">
+    <div class="col-lg-8">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-transparent border-0 p-4">
                 <h5 class="fw-bold mb-0">
@@ -159,88 +159,60 @@
             </div>
             <div class="card-body p-4">
                 <div class="row g-3">
-                    <div class="col-6">
+                    <div class="col-4">
                         <div class="border-start border-primary border-3 ps-3">
                             <div class="text-muted small mb-1">Total Trades</div>
                             <div class="fw-bold fs-5">8,342</div>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <div class="border-start border-success border-3 ps-3">
                             <div class="text-muted small mb-1">Winning Trades</div>
                             <div class="fw-bold fs-5 text-success">5,706</div>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <div class="border-start border-danger border-3 ps-3">
                             <div class="text-muted small mb-1">Losing Trades</div>
                             <div class="fw-bold fs-5 text-danger">2,636</div>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <div class="border-start border-warning border-3 ps-3">
                             <div class="text-muted small mb-1">Avg Trade Duration</div>
                             <div class="fw-bold fs-5">4.2h</div>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <div class="border-start border-info border-3 ps-3">
                             <div class="text-muted small mb-1">Best Trade</div>
                             <div class="fw-bold fs-5 text-success">+$2,345</div>
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-4">
                         <div class="border-start border-secondary border-3 ps-3">
                             <div class="text-muted small mb-1">Worst Trade</div>
                             <div class="fw-bold fs-5 text-danger">-$890</div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-6">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0 p-4">
-                <h5 class="fw-bold mb-0">
-                    <i class="bi bi-bank me-2"></i>Exchange Performance
-                </h5>
-            </div>
-            <div class="card-body p-4">
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div>
-                            <span class="badge bg-primary bg-opacity-10 text-primary me-2">
-                                <i class="bi bi-coin"></i> Bybit
-                            </span>
-                            <span class="fw-semibold">$1.4M</span>
+                    <div class="col-4">
+                        <div class="border-start border-success border-3 ps-3">
+                            <div class="text-muted small mb-1">Profitable Traders</div>
+                            <div class="fw-bold fs-5 text-success">67%</div>
                         </div>
-                        <span class="text-success small">+14.2%</span>
                     </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-primary" style="width: 58%"></div>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div>
-                            <span class="badge bg-warning bg-opacity-10 text-warning me-2">
-                                <i class="bi bi-currency-bitcoin"></i> Binance
-                            </span>
-                            <span class="fw-semibold">$1.0M</span>
+                    <div class="col-4">
+                        <div class="border-start border-info border-3 ps-3">
+                            <div class="text-muted small mb-1">Even Traders</div>
+                            <div class="fw-bold fs-5 text-info">18%</div>
                         </div>
-                        <span class="text-success small">+12.8%</span>
                     </div>
-                    <div class="progress" style="height: 8px;">
-                        <div class="progress-bar bg-warning" style="width: 42%"></div>
+                    <div class="col-4">
+                        <div class="border-start border-danger border-3 ps-3">
+                            <div class="text-muted small mb-1">Losing Traders</div>
+                            <div class="fw-bold fs-5 text-danger">15%</div>
+                        </div>
                     </div>
-                </div>
-                <div class="alert alert-info border-0 mb-0 mt-3">
-                    <small>
-                        <i class="bi bi-info-circle me-2"></i>
-                        Bybit shows higher volume with 4,845 trades vs Binance's 3,497 trades
-                    </small>
                 </div>
             </div>
         </div>
@@ -277,7 +249,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">Sarah Chen</div>
-                            <small class="text-muted">ID: 1092</small>
+                            <small class="text-secondary">ID: 1092</small>
                         </td>
                         <td>
                             <span class="badge bg-info rounded-pill">287</span>
@@ -308,7 +280,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">John Doe</div>
-                            <small class="text-muted">ID: 1043</small>
+                            <small class="text-secondary">ID: 1043</small>
                         </td>
                         <td>
                             <span class="badge bg-info rounded-pill">342</span>
@@ -339,7 +311,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">Emily Watson</div>
-                            <small class="text-muted">ID: 1156</small>
+                            <small class="text-secondary">ID: 1156</small>
                         </td>
                         <td>
                             <span class="badge bg-info rounded-pill">198</span>
@@ -399,7 +371,7 @@
             <div class="card-body p-4">
                 <div class="mb-3">
                     <div class="d-flex justify-content-between mb-2">
-                        <span class="fw-semibold">BTC/USDT</span>
+                        <span class="fw-semibold">BTCUSDT</span>
                         <span class="badge bg-primary rounded-pill">2,845 trades</span>
                     </div>
                     <div class="progress" style="height: 6px;">
@@ -408,7 +380,7 @@
                 </div>
                 <div class="mb-3">
                     <div class="d-flex justify-content-between mb-2">
-                        <span class="fw-semibold">ETH/USDT</span>
+                        <span class="fw-semibold">ETHUSDT</span>
                         <span class="badge bg-primary rounded-pill">2,134 trades</span>
                     </div>
                     <div class="progress" style="height: 6px;">
@@ -417,7 +389,7 @@
                 </div>
                 <div class="mb-3">
                     <div class="d-flex justify-content-between mb-2">
-                        <span class="fw-semibold">SOL/USDT</span>
+                        <span class="fw-semibold">SOLUSDT</span>
                         <span class="badge bg-primary rounded-pill">1,567 trades</span>
                     </div>
                     <div class="progress" style="height: 6px;">
@@ -426,7 +398,7 @@
                 </div>
                 <div class="mb-0">
                     <div class="d-flex justify-content-between mb-2">
-                        <span class="fw-semibold">XRP/USDT</span>
+                        <span class="fw-semibold">XRPUSDT</span>
                         <span class="badge bg-primary rounded-pill">1,234 trades</span>
                     </div>
                     <div class="progress" style="height: 6px;">

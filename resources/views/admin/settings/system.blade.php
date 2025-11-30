@@ -79,7 +79,7 @@
         </div>
         <div class="card-body p-4">
             <div class="row g-4">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label fw-semibold">Global Trading Status</label>
                     <select class="form-select form-select-lg" name="trading_enabled">
                         <option value="1" selected>Enabled</option>
@@ -87,15 +87,12 @@
                     </select>
                     <div class="form-text">Master switch for all trading operations</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label fw-semibold">Max Concurrent Trades per User</label>
                     <input type="number" class="form-control form-control-lg" name="max_trades_per_user" value="20" min="1" max="100">
                     <div class="form-text">Maximum simultaneous open positions</div>
                 </div>
-            </div>
-
-            <div class="row g-4 mt-2">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label fw-semibold">Default Leverage</label>
                     <select class="form-select form-select-lg" name="default_leverage">
                         <option value="1">1x (No Leverage)</option>
@@ -106,7 +103,10 @@
                     </select>
                     <div class="form-text">Default leverage for new trades</div>
                 </div>
-                <div class="col-md-6">
+            </div>
+
+            <div class="row g-4 mt-2">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Max Leverage Allowed</label>
                     <select class="form-select form-select-lg" name="max_leverage">
                         <option value="5">5x</option>
@@ -117,20 +117,17 @@
                     </select>
                     <div class="form-text">Maximum leverage users can select</div>
                 </div>
-            </div>
-
-            <div class="row g-4 mt-2">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Min Position Size (USD)</label>
                     <input type="number" class="form-control form-control-lg" name="min_position_size" value="10" min="1">
                     <div class="form-text">Minimum trade size</div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Max Position Size (USD)</label>
                     <input type="number" class="form-control form-control-lg" name="max_position_size" value="50000" min="100">
                     <div class="form-text">Maximum trade size</div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Trade Execution Timeout (sec)</label>
                     <input type="number" class="form-control form-control-lg" name="trade_timeout" value="30" min="5" max="120">
                     <div class="form-text">Max time for trade execution</div>
@@ -148,25 +145,22 @@
         </div>
         <div class="card-body p-4">
             <div class="row g-4">
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Monitor Refresh Interval (seconds)</label>
                     <input type="number" class="form-control form-control-lg" name="monitor_interval" value="10" min="5" max="60">
                     <div class="form-text">How often to check position status</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Emergency Stop Loss (%)</label>
                     <input type="number" class="form-control form-control-lg" name="emergency_sl" value="10" min="5" max="50" step="0.5">
                     <div class="form-text">Force close if loss exceeds this percentage</div>
                 </div>
-            </div>
-
-            <div class="row g-4 mt-2">
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Daily Loss Limit per User (%)</label>
                     <input type="number" class="form-control form-control-lg" name="daily_loss_limit" value="15" min="5" max="50">
                     <div class="form-text">Halt trading if daily loss exceeds</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Max Drawdown Alert (%)</label>
                     <input type="number" class="form-control form-control-lg" name="max_drawdown_alert" value="20" min="10" max="50">
                     <div class="form-text">Alert when drawdown reaches this level</div>
@@ -175,8 +169,9 @@
 
             <div class="mt-4">
                 <label class="form-label fw-semibold">Safety Features</label>
+                <hr class="mt-0 mb-3 bg-secondary">
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="auto_stop_loss" name="auto_stop_loss" checked>
                             <label class="form-check-label fw-semibold" for="auto_stop_loss">
@@ -185,7 +180,7 @@
                         </div>
                         <small class="text-muted">Automatically set SL for all trades</small>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="auto_take_profit" name="auto_take_profit" checked>
                             <label class="form-check-label fw-semibold" for="auto_take_profit">
@@ -194,7 +189,7 @@
                         </div>
                         <small class="text-muted">Automatically set TP for all trades</small>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="trailing_stop" name="trailing_stop">
                             <label class="form-check-label fw-semibold" for="trailing_stop">
@@ -203,7 +198,7 @@
                         </div>
                         <small class="text-muted">Enable dynamic trailing stop loss</small>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="circuit_breaker" name="circuit_breaker" checked>
                             <label class="form-check-label fw-semibold" for="circuit_breaker">
@@ -226,28 +221,20 @@
         </div>
         <div class="card-body p-4">
             <div class="row g-4">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label fw-semibold">API Request Timeout (seconds)</label>
                     <input type="number" class="form-control form-control-lg" name="api_timeout" value="15" min="5" max="60">
                     <div class="form-text">Max wait time for exchange API responses</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label fw-semibold">Max API Retries</label>
                     <input type="number" class="form-control form-control-lg" name="max_retries" value="3" min="1" max="10">
                     <div class="form-text">Retry failed API calls this many times</div>
                 </div>
-            </div>
-
-            <div class="row g-4 mt-2">
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Rate Limit - Bybit (requests/min)</label>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Rate Limit</label>
                     <input type="number" class="form-control form-control-lg" name="bybit_rate_limit" value="100" min="10" max="200">
                     <div class="form-text">Maximum requests per minute to Bybit</div>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Rate Limit - Binance (requests/min)</label>
-                    <input type="number" class="form-control form-control-lg" name="binance_rate_limit" value="120" min="10" max="200">
-                    <div class="form-text">Maximum requests per minute to Binance</div>
                 </div>
             </div>
         </div>
@@ -262,7 +249,7 @@
         </div>
         <div class="card-body p-4">
             <div class="row g-4">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label fw-semibold">Allow New Registrations</label>
                     <select class="form-select form-select-lg" name="allow_registration">
                         <option value="1" selected>Enabled</option>
@@ -270,7 +257,7 @@
                     </select>
                     <div class="form-text">Allow new users to register</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label fw-semibold">Email Verification Required</label>
                     <select class="form-select form-select-lg" name="email_verification">
                         <option value="1" selected>Required</option>
@@ -278,15 +265,7 @@
                     </select>
                     <div class="form-text">Force email verification before trading</div>
                 </div>
-            </div>
-
-            <div class="row g-4 mt-2">
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Max Exchanges per User</label>
-                    <input type="number" class="form-control form-control-lg" name="max_exchanges" value="5" min="1" max="10">
-                    <div class="form-text">Maximum exchange connections per user</div>
-                </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label fw-semibold">Session Timeout (minutes)</label>
                     <input type="number" class="form-control form-control-lg" name="session_timeout" value="120" min="30" max="1440">
                     <div class="form-text">Auto-logout inactive users after</div>
@@ -384,7 +363,7 @@
         </div>
         <div class="card-body p-4">
             <div class="row g-4">
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Automatic Backups</label>
                     <select class="form-select form-select-lg" name="auto_backup">
                         <option value="1" selected>Enabled</option>
@@ -392,7 +371,7 @@
                     </select>
                     <div class="form-text">Automatically backup database</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Backup Frequency</label>
                     <select class="form-select form-select-lg" name="backup_frequency">
                         <option value="hourly">Every Hour</option>
@@ -401,15 +380,12 @@
                     </select>
                     <div class="form-text">How often to backup</div>
                 </div>
-            </div>
-
-            <div class="row g-4 mt-2">
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Data Retention (days)</label>
                     <input type="number" class="form-control form-control-lg" name="data_retention" value="365" min="30" max="3650">
                     <div class="form-text">Keep historical data for this many days</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Log Retention (days)</label>
                     <input type="number" class="form-control form-control-lg" name="log_retention" value="90" min="7" max="365">
                     <div class="form-text">Keep system logs for this many days</div>
@@ -436,7 +412,7 @@
         </div>
         <div class="card-body p-4">
             <div class="row g-4">
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Cache Driver</label>
                     <select class="form-select form-select-lg" name="cache_driver">
                         <option value="redis" selected>Redis</option>
@@ -445,15 +421,12 @@
                     </select>
                     <div class="form-text">Cache system for faster performance</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Cache TTL (seconds)</label>
                     <input type="number" class="form-control form-control-lg" name="cache_ttl" value="3600" min="60" max="86400">
                     <div class="form-text">How long to cache data</div>
                 </div>
-            </div>
-
-            <div class="row g-4 mt-2">
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Queue Driver</label>
                     <select class="form-select form-select-lg" name="queue_driver">
                         <option value="redis" selected>Redis</option>
@@ -462,7 +435,7 @@
                     </select>
                     <div class="form-text">Queue system for background jobs</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Max Queue Workers</label>
                     <input type="number" class="form-control form-control-lg" name="max_workers" value="10" min="1" max="50">
                     <div class="form-text">Maximum concurrent queue workers</div>

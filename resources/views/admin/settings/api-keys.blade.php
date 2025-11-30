@@ -104,14 +104,7 @@
             <div class="col-lg-4">
                 <input type="text" class="form-control" placeholder="Search by user name or email...">
             </div>
-            <div class="col-lg-2">
-                <select class="form-select">
-                    <option value="">All Exchanges</option>
-                    <option value="bybit">Bybit</option>
-                    <option value="binance">Binance</option>
-                </select>
-            </div>
-            <div class="col-lg-2">
+            <div class="col-lg-3">
                 <select class="form-select">
                     <option value="">All Status</option>
                     <option value="active">Active</option>
@@ -119,7 +112,7 @@
                     <option value="failed">Failed</option>
                 </select>
             </div>
-            <div class="col-lg-2">
+            <div class="col-lg-3">
                 <button class="btn btn-primary w-100">
                     <i class="bi bi-funnel me-2"></i>Filter
                 </button>
@@ -152,7 +145,6 @@
                 <thead class="bg-body-secondary">
                     <tr>
                         <th class="border-0 px-4 py-3 fw-semibold">User</th>
-                        <th class="border-0 py-3 fw-semibold">Exchange</th>
                         <th class="border-0 py-3 fw-semibold">API Key</th>
                         <th class="border-0 py-3 fw-semibold">Label</th>
                         <th class="border-0 py-3 fw-semibold">Permissions</th>
@@ -169,13 +161,8 @@
                             <small class="text-muted">john.doe@example.com</small>
                         </td>
                         <td>
-                            <span class="badge bg-primary bg-opacity-10 text-primary">
-                                <i class="bi bi-coin me-1"></i>Bybit
-                            </span>
-                        </td>
-                        <td>
                             <div class="font-monospace small">****...XY2Z</div>
-                            <small class="text-muted">Created: Jan 15, 2024</small>
+                            <small class="text-secondary">Created: Jan 15, 2024</small>
                         </td>
                         <td>
                             <div class="fw-semibold small">Main Account</div>
@@ -210,16 +197,11 @@
                     <tr>
                         <td class="px-4">
                             <div class="fw-semibold">John Doe</div>
-                            <small class="text-muted">john.doe@example.com</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning bg-opacity-10 text-warning">
-                                <i class="bi bi-currency-bitcoin me-1"></i>Binance
-                            </span>
+                            <small class="text-secondary">john.doe@example.com</small>
                         </td>
                         <td>
                             <div class="font-monospace small">****...AB9C</div>
-                            <small class="text-muted">Created: Jan 15, 2024</small>
+                            <small class="text-secondary">Created: Jan 15, 2024</small>
                         </td>
                         <td>
                             <div class="fw-semibold small">Trading Account</div>
@@ -254,16 +236,11 @@
                     <tr class="table-danger bg-opacity-10">
                         <td class="px-4">
                             <div class="fw-semibold">Sarah Chen</div>
-                            <small class="text-muted">sarah.chen@example.com</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-primary bg-opacity-10 text-primary">
-                                <i class="bi bi-coin me-1"></i>Bybit
-                            </span>
+                            <small class="text-secondary">sarah.chen@example.com</small>
                         </td>
                         <td>
                             <div class="font-monospace small">****...MN5P</div>
-                            <small class="text-muted">Created: Feb 03, 2024</small>
+                            <small class="text-secondary">Created: Feb 03, 2024</small>
                         </td>
                         <td>
                             <div class="fw-semibold small">Main Account</div>
@@ -299,16 +276,11 @@
                     <tr class="table-secondary bg-opacity-25">
                         <td class="px-4">
                             <div class="fw-semibold">Michael Rodriguez</div>
-                            <small class="text-muted">michael.r@example.com</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning bg-opacity-10 text-warning">
-                                <i class="bi bi-currency-bitcoin me-1"></i>Binance
-                            </span>
+                            <small class="text-secondary">michael.r@example.com</small>
                         </td>
                         <td>
                             <div class="font-monospace small">****...QR7T</div>
-                            <small class="text-muted">Created: Mar 21, 2024</small>
+                            <small class="text-secondary">Created: Mar 21, 2024</small>
                         </td>
                         <td>
                             <div class="fw-semibold small">—</div>
@@ -342,16 +314,11 @@
                     <tr>
                         <td class="px-4">
                             <div class="fw-semibold">Emily Watson</div>
-                            <small class="text-muted">emily.w@example.com</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning bg-opacity-10 text-warning">
-                                <i class="bi bi-currency-bitcoin me-1"></i>Binance
-                            </span>
+                            <small class="text-secondary">emily.w@example.com</small>
                         </td>
                         <td>
                             <div class="font-monospace small">****...UV8W</div>
-                            <small class="text-muted">Created: Apr 10, 2024</small>
+                            <small class="text-secondary">Created: Apr 10, 2024</small>
                         </td>
                         <td>
                             <div class="fw-semibold small">Primary</div>

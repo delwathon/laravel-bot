@@ -19,11 +19,6 @@ class SettingsController extends Controller
                 'connected' => false,
                 'api_key' => null,
             ],
-            'binance' => [
-                'name' => 'Binance',
-                'connected' => false,
-                'api_key' => null,
-            ],
         ];
         
         return view('admin.settings.api-keys', compact('exchanges'));
@@ -62,8 +57,8 @@ class SettingsController extends Controller
             'risk_reward_ratio' => '1:2',
             'max_stop_loss' => 2,
             'position_size' => 5,
-            'enabled_exchanges' => ['bybit', 'binance'],
-            'enabled_pairs' => ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'],
+            'enabled_exchanges' => ['bybit'],
+            'enabled_pairs' => ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'],
         ];
         
         return view('admin.settings.signal-generator', compact('settings'));

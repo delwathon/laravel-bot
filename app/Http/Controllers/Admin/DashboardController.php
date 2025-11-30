@@ -72,7 +72,7 @@ class DashboardController extends Controller
                 
                 return (object) [
                     'symbol' => $pair->symbol,
-                    'name' => str_replace('/USDT', '', $pair->symbol),
+                    'name' => str_replace('USDT', '', $pair->symbol),
                     'icon' => $this->getIconForSymbol($pair->symbol),
                     'color' => $this->getColorForSymbol($pair->symbol),
                     'exchange' => 'Bybit',
@@ -108,11 +108,11 @@ class DashboardController extends Controller
     private function getIconForSymbol($symbol)
     {
         $icons = [
-            'BTC/USDT' => 'currency-bitcoin',
-            'ETH/USDT' => 'currency-exchange',
-            'SOL/USDT' => 'coin',
-            'BNB/USDT' => 'currency-dollar',
-            'XRP/USDT' => 'graph-up',
+            'BTCUSDT' => 'currency-bitcoin',
+            'ETHUSDT' => 'currency-exchange',
+            'SOLUSDT' => 'coin',
+            'BNBUSDT' => 'currency-dollar',
+            'XRPUSDT' => 'graph-up',
         ];
         
         return $icons[$symbol] ?? 'currency-exchange';
@@ -124,11 +124,11 @@ class DashboardController extends Controller
     private function getColorForSymbol($symbol)
     {
         $colors = [
-            'BTC/USDT' => 'warning',
-            'ETH/USDT' => 'info',
-            'SOL/USDT' => 'purple',
-            'BNB/USDT' => 'warning',
-            'XRP/USDT' => 'primary',
+            'BTCUSDT' => 'warning',
+            'ETHUSDT' => 'info',
+            'SOLUSDT' => 'purple',
+            'BNBUSDT' => 'warning',
+            'XRPUSDT' => 'primary',
         ];
         
         return $colors[$symbol] ?? 'primary';

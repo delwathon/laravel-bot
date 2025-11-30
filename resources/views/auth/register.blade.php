@@ -35,8 +35,8 @@
                             <i class="bi bi-check-lg fs-4"></i>
                         </div>
                         <div>
-                            <h5 class="fw-bold mb-1">Multi-Exchange Support</h5>
-                            <p class="mb-0 opacity-75">Connect Bybit and Binance accounts seamlessly</p>
+                            <h5 class="fw-bold mb-1">Bybit-Exchange Support</h5>
+                            <p class="mb-0 opacity-75">Connect Bybit accounts seamlessly</p>
                         </div>
                     </div>
                     <div class="d-flex align-items-start mb-4">

@@ -98,24 +98,16 @@
                     <option value="custom">Custom Range</option>
                 </select>
             </div>
-            <div class="col-lg-2">
-                <label class="form-label fw-semibold small">Exchange</label>
-                <select class="form-select">
-                    <option value="">All Exchanges</option>
-                    <option value="bybit">Bybit</option>
-                    <option value="binance">Binance</option>
-                </select>
-            </div>
-            <div class="col-lg-2">
+            <div class="col-lg-3">
                 <label class="form-label fw-semibold small">Pair</label>
                 <select class="form-select">
                     <option value="">All Pairs</option>
-                    <option value="BTCUSDT">BTC/USDT</option>
-                    <option value="ETHUSDT">ETH/USDT</option>
-                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="BTCUSDT">BTCUSDT</option>
+                    <option value="ETHUSDT">ETHUSDT</option>
+                    <option value="SOLUSDT">SOLUSDT</option>
                 </select>
             </div>
-            <div class="col-lg-2">
+            <div class="col-lg-3">
                 <label class="form-label fw-semibold small">Trade Type</label>
                 <select class="form-select">
                     <option value="">All Types</option>
@@ -181,11 +173,11 @@
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">14:23:15</div>
-                            <small class="text-muted">Oct 25, 2024</small>
+                            <small class="text-secondary">Oct 25, 2024</small>
                         </td>
                         <td>
                             <div class="fw-semibold">John Doe</div>
-                            <small class="text-muted">ID: 1043</small>
+                            <small class="text-secondary">ID: 1043</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -193,8 +185,7 @@
                                     <i class="bi bi-currency-bitcoin text-warning small"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-semibold">BTC/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-semibold">BTCUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -209,7 +200,7 @@
                         </td>
                         <td>
                             <div>0.15 BTC</div>
-                            <small class="text-muted">~$10k</small>
+                            <small class="text-secondary">~$10k</small>
                         </td>
                         <td>
                             <small>2h 15m</small>
@@ -224,11 +215,11 @@
                     <tr class="table-danger bg-opacity-10">
                         <td class="px-4">
                             <div class="small fw-semibold">13:45:22</div>
-                            <small class="text-muted">Oct 25, 2024</small>
+                            <small class="text-secondary">Oct 25, 2024</small>
                         </td>
                         <td>
                             <div class="fw-semibold">Sarah Chen</div>
-                            <small class="text-muted">ID: 1092</small>
+                            <small class="text-secondary">ID: 1092</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -236,8 +227,7 @@
                                     <i class="bi bi-currency-exchange text-info small"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-semibold">ETH/USDT</div>
-                                    <small class="text-muted">Binance</small>
+                                    <div class="fw-semibold">ETHUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -252,7 +242,7 @@
                         </td>
                         <td>
                             <div>2.5 ETH</div>
-                            <small class="text-muted">~$8.2k</small>
+                            <small class="text-secondary">~$8.2k</small>
                         </td>
                         <td>
                             <small>45m</small>
@@ -267,11 +257,11 @@
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">12:18:05</div>
-                            <small class="text-muted">Oct 25, 2024</small>
+                            <small class="text-secondary">Oct 25, 2024</small>
                         </td>
                         <td>
                             <div class="fw-semibold">Emily Watson</div>
-                            <small class="text-muted">ID: 1156</small>
+                            <small class="text-secondary">ID: 1156</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -279,8 +269,7 @@
                                     <i class="bi bi-coin small" style="color: #8b5cf6;"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-semibold">SOL/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-semibold">SOLUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -295,7 +284,7 @@
                         </td>
                         <td>
                             <div>50 SOL</div>
-                            <small class="text-muted">~$7.3k</small>
+                            <small class="text-secondary">~$7.3k</small>
                         </td>
                         <td>
                             <small>3h 42m</small>
@@ -310,11 +299,11 @@
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">11:32:41</div>
-                            <small class="text-muted">Oct 25, 2024</small>
+                            <small class="text-secondary">Oct 25, 2024</small>
                         </td>
                         <td>
                             <div class="fw-semibold">Michael Rodriguez</div>
-                            <small class="text-muted">ID: 1128</small>
+                            <small class="text-secondary">ID: 1128</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -322,8 +311,7 @@
                                     <i class="bi bi-currency-dollar text-success small"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-semibold">XRP/USDT</div>
-                                    <small class="text-muted">Binance</small>
+                                    <div class="fw-semibold">XRPUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -338,7 +326,7 @@
                         </td>
                         <td>
                             <div>5,000 XRP</div>
-                            <small class="text-muted">~$2.6k</small>
+                            <small class="text-secondary">~$2.6k</small>
                         </td>
                         <td>
                             <small>1h 18m</small>
@@ -353,11 +341,11 @@
                     <tr class="table-danger bg-opacity-10">
                         <td class="px-4">
                             <div class="small fw-semibold">10:15:33</div>
-                            <small class="text-muted">Oct 25, 2024</small>
+                            <small class="text-secondary">Oct 25, 2024</small>
                         </td>
                         <td>
                             <div class="fw-semibold">David Kim</div>
-                            <small class="text-muted">ID: 1189</small>
+                            <small class="text-secondary">ID: 1189</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -365,8 +353,7 @@
                                     <i class="bi bi-coin text-danger small"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-semibold">AVAX/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-semibold">AVAXUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -381,7 +368,7 @@
                         </td>
                         <td>
                             <div>200 AVAX</div>
-                            <small class="text-muted">~$5.7k</small>
+                            <small class="text-secondary">~$5.7k</small>
                         </td>
                         <td>
                             <small>28m</small>

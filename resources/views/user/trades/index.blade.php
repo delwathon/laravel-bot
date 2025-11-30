@@ -98,24 +98,16 @@
                     <option value="all">All Time</option>
                 </select>
             </div>
-            <div class="col-lg-2">
-                <label class="form-label fw-semibold small">Exchange</label>
-                <select class="form-select">
-                    <option value="">All Exchanges</option>
-                    <option value="bybit">Bybit</option>
-                    <option value="binance">Binance</option>
-                </select>
-            </div>
-            <div class="col-lg-2">
+            <div class="col-lg-3">
                 <label class="form-label fw-semibold small">Pair</label>
                 <select class="form-select">
                     <option value="">All Pairs</option>
-                    <option value="BTCUSDT">BTC/USDT</option>
-                    <option value="ETHUSDT">ETH/USDT</option>
-                    <option value="SOLUSDT">SOL/USDT</option>
+                    <option value="BTCUSDT">BTCUSDT</option>
+                    <option value="ETHUSDT">ETHUSDT</option>
+                    <option value="SOLUSDT">SOLUSDT</option>
                 </select>
             </div>
-            <div class="col-lg-2">
+            <div class="col-lg-3">
                 <label class="form-label fw-semibold small">Type</label>
                 <select class="form-select">
                     <option value="">All Types</option>
@@ -190,8 +182,7 @@
                                     <i class="bi bi-currency-bitcoin text-warning small"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-semibold">BTC/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-semibold">BTCUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -231,8 +222,7 @@
                                     <i class="bi bi-currency-exchange text-info small"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-semibold">ETH/USDT</div>
-                                    <small class="text-muted">Binance</small>
+                                    <div class="fw-semibold">ETHUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -272,8 +262,7 @@
                                     <i class="bi bi-coin small" style="color: #8b5cf6;"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-semibold">SOL/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-semibold">SOLUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -313,8 +302,7 @@
                                     <i class="bi bi-currency-dollar text-success small"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-semibold">XRP/USDT</div>
-                                    <small class="text-muted">Binance</small>
+                                    <div class="fw-semibold">XRPUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -354,8 +342,7 @@
                                     <i class="bi bi-coin text-danger small"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-semibold">AVAX/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-semibold">AVAXUSDT</div>
                                 </div>
                             </div>
                         </td>

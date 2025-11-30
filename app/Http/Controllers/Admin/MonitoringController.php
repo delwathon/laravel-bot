@@ -37,11 +37,6 @@ class MonitoringController extends Controller
                 'latency' => '12ms',
                 'last_sync' => now(),
             ],
-            'binance' => [
-                'status' => 'connected',
-                'latency' => '18ms',
-                'last_sync' => now(),
-            ],
         ];
         
         // Recent errors (placeholder)

@@ -25,6 +25,84 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
+                        <div class="text-muted text-uppercase small fw-bold mb-1">Active Positions</div>
+                        <h3 class="fw-bold mb-0 text-info">{{ $stats['active_trades'] ?? 0 }}</h3>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded-3">
+                        <i class="bi bi-graph-up-arrow text-info fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-muted small">Across all users</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted text-uppercase small fw-bold mb-1">Total Volume (24h)</div>
+                        <h3 class="fw-bold mb-0">${{ number_format($stats['total_volume'] ?? 0, 0) }}</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-3">
+                        <i class="bi bi-cash-stack text-primary fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="badge bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-arrow-up"></i> +12.5%
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted text-uppercase small fw-bold mb-1">Total Profit</div>
+                        <h3 class="fw-bold mb-0 text-success">${{ number_format($stats['total_profit'] ?? 0, 2) }}</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded-3">
+                        <i class="bi bi-trophy-fill text-success fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-muted small">All users combined</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted text-uppercase small fw-bold mb-1">Affected Users</div>
+                        <h3 class="fw-bold mb-0 text-warning">{{ $stats['affected_users'] ?? 0 }}</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded-3">
+                        <i class="bi bi-people-fill text-warning fs-4"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-muted small">With active trades</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Admin Trades (24h)</div>
                         <h3 class="fw-bold mb-0">23</h3>
                     </div>
@@ -109,24 +187,9 @@
     <div class="card-body p-4">
         <form id="executeTradeForm">
             <div class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Exchange</label>
-                    <select class="form-select" required>
-                        <option value="">Select Exchange</option>
-                        <option value="bybit">Bybit</option>
-                        <option value="binance">Binance</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label fw-semibold">Trading Pair</label>
-                    <select class="form-select" required>
-                        <option value="">Select Pair</option>
-                        <option value="BTCUSDT">BTC/USDT</option>
-                        <option value="ETHUSDT">ETH/USDT</option>
-                        <option value="SOLUSDT">SOL/USDT</option>
-                        <option value="XRPUSDT">XRP/USDT</option>
-                        <option value="AVAXUSDT">AVAX/USDT</option>
-                    </select>
+                    <input type="text" class="form-control" placeholder="10000PEPE" required>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Direction</label>
@@ -141,30 +204,14 @@
                     <input type="number" class="form-control" placeholder="66450.00" step="0.01" required>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label fw-semibold">Position Size (%)</label>
-                    <input type="number" class="form-control" placeholder="5" min="1" max="100" required>
-                </div>
-            </div>
-            <div class="row g-3 mt-2">
-                <div class="col-md-3">
                     <label class="form-label fw-semibold">Take Profit</label>
                     <input type="number" class="form-control" placeholder="67200.00" step="0.01" required>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label fw-semibold">Stop Loss</label>
                     <input type="number" class="form-control" placeholder="65900.00" step="0.01" required>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Leverage</label>
-                    <select class="form-select" required>
-                        <option value="1">1x (No Leverage)</option>
-                        <option value="2">2x</option>
-                        <option value="3">3x</option>
-                        <option value="5">5x</option>
-                        <option value="10">10x</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label fw-semibold">Order Type</label>
                     <select class="form-select" required>
                         <option value="market">Market</option>
@@ -217,7 +264,6 @@
                 <thead class="bg-body-secondary">
                     <tr>
                         <th class="border-0 px-4 py-3 fw-semibold">Pair</th>
-                        <th class="border-0 py-3 fw-semibold">Exchange</th>
                         <th class="border-0 py-3 fw-semibold">Direction</th>
                         <th class="border-0 py-3 fw-semibold">Entry Price</th>
                         <th class="border-0 py-3 fw-semibold">Current Price</th>
@@ -236,15 +282,9 @@
                                     <i class="bi bi-currency-bitcoin text-warning"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">BTC/USDT</div>
-                                    <small class="text-muted">Bitcoin</small>
+                                    <div class="fw-bold">BTCUSDT</div>
                                 </div>
                             </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-primary bg-opacity-10 text-primary">
-                                <i class="bi bi-coin me-1"></i>Bybit
-                            </span>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success">
@@ -253,7 +293,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$66,450</div>
-                            <small class="text-muted">5x leverage</small>
+                            <small class="text-secondary">5x leverage</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-success">$66,823</div>
@@ -261,7 +301,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">0.15 BTC</div>
-                            <small class="text-muted">~$10,023</small>
+                            <small class="text-secondary">~$10,023</small>
                         </td>
                         <td>
                             <div class="text-success fw-bold">+$279.45</div>
@@ -269,7 +309,7 @@
                         </td>
                         <td>
                             <span class="badge bg-info rounded-pill">248 users</span>
-                            <div class="small text-muted">All active</div>
+                            <div class="small text-secondary">All active</div>
                         </td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
@@ -294,15 +334,9 @@
                                     <i class="bi bi-currency-exchange text-info"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">ETH/USDT</div>
-                                    <small class="text-muted">Ethereum</small>
+                                    <div class="fw-bold">ETHUSDT</div>
                                 </div>
                             </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning bg-opacity-10 text-warning">
-                                <i class="bi bi-currency-bitcoin me-1"></i>Binance
-                            </span>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success">
@@ -311,7 +345,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$3,245</div>
-                            <small class="text-muted">3x leverage</small>
+                            <small class="text-secondary">3x leverage</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-success">$3,298</div>
@@ -319,7 +353,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">3.0 ETH</div>
-                            <small class="text-muted">~$9,894</small>
+                            <small class="text-secondary">~$9,894</small>
                         </td>
                         <td>
                             <div class="text-success fw-bold">+$485.22</div>
@@ -352,15 +386,9 @@
                                     <i class="bi bi-coin" style="color: #8b5cf6;"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">SOL/USDT</div>
-                                    <small class="text-muted">Solana</small>
+                                    <div class="fw-bold">SOLUSDT</div>
                                 </div>
                             </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-primary bg-opacity-10 text-primary">
-                                <i class="bi bi-coin me-1"></i>Bybit
-                            </span>
                         </td>
                         <td>
                             <span class="badge bg-danger bg-opacity-10 text-danger">
@@ -369,7 +397,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$145.80</div>
-                            <small class="text-muted">2x leverage</small>
+                            <small class="text-secondary">2x leverage</small>
                         </td>
                         <td>
                             <div class="fw-semibold text-danger">$147.23</div>
@@ -377,7 +405,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">50 SOL</div>
-                            <small class="text-muted">~$7,361</small>
+                            <small class="text-secondary">~$7,361</small>
                         </td>
                         <td>
                             <div class="text-danger fw-bold">-$144.15</div>
@@ -441,11 +469,10 @@
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">14:23:15</div>
-                            <small class="text-muted">2m ago</small>
+                            <small class="text-secondary">2m ago</small>
                         </td>
                         <td>
-                            <div class="fw-semibold">BTC/USDT</div>
-                            <small class="text-muted">Bybit</small>
+                            <div class="fw-semibold">BTCUSDT</div>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success">
@@ -457,7 +484,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">0.15 BTC</div>
-                            <small class="text-muted">$9,968</small>
+                            <small class="text-secondary">$9,968</small>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
@@ -470,7 +497,7 @@
                         </td>
                         <td class="text-end">
                             <div class="text-success fw-semibold">Active</div>
-                            <small class="text-muted">Position open</small>
+                            <small class="text-secondary">Position open</small>
                         </td>
                     </tr>
 
@@ -478,11 +505,10 @@
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">13:45:22</div>
-                            <small class="text-muted">40m ago</small>
+                            <small class="text-secondary">40m ago</small>
                         </td>
                         <td>
-                            <div class="fw-semibold">ETH/USDT</div>
-                            <small class="text-muted">Binance</small>
+                            <div class="fw-semibold">ETHUSDT</div>
                         </td>
                         <td>
                             <span class="badge bg-danger bg-opacity-10 text-danger">
@@ -494,7 +520,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">2.5 ETH</div>
-                            <small class="text-muted">$8,245</small>
+                            <small class="text-secondary">$8,245</small>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
@@ -515,11 +541,10 @@
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">12:18:05</div>
-                            <small class="text-muted">2h ago</small>
+                            <small class="text-secondary">2h ago</small>
                         </td>
                         <td>
-                            <div class="fw-semibold">XRP/USDT</div>
-                            <small class="text-muted">Bybit</small>
+                            <div class="fw-semibold">XRPUSDT</div>
                         </td>
                         <td>
                             <span class="badge bg-danger bg-opacity-10 text-danger">
@@ -531,7 +556,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">15,000 XRP</div>
-                            <small class="text-muted">$7,851</small>
+                            <small class="text-secondary">$7,851</small>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
@@ -544,7 +569,7 @@
                         </td>
                         <td class="text-end">
                             <div class="text-success fw-semibold">Active</div>
-                            <small class="text-muted">Position open</small>
+                            <small class="text-secondary">Position open</small>
                         </td>
                     </tr>
 
@@ -552,11 +577,10 @@
                     <tr class="table-danger bg-opacity-10">
                         <td class="px-4">
                             <div class="small fw-semibold">11:32:41</div>
-                            <small class="text-muted">3h ago</small>
+                            <small class="text-secondary">3h ago</small>
                         </td>
                         <td>
-                            <div class="fw-semibold">AVAX/USDT</div>
-                            <small class="text-muted">Binance</small>
+                            <div class="fw-semibold">AVAXUSDT</div>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success">
@@ -568,7 +592,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">200 AVAX</div>
-                            <small class="text-muted">$5,690</small>
+                            <small class="text-secondary">$5,690</small>
                         </td>
                         <td>
                             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
@@ -581,7 +605,7 @@
                         </td>
                         <td class="text-end">
                             <div class="text-danger fw-semibold">Failed</div>
-                            <small class="text-muted">Insufficient funds</small>
+                            <small class="text-secondary">Insufficient funds</small>
                         </td>
                     </tr>
 
@@ -617,7 +641,7 @@
                         <h6 class="fw-bold mb-2">Position Summary</h6>
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Pair</span>
-                            <span class="fw-bold">BTC/USDT</span>
+                            <span class="fw-bold">BTCUSDT</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Current P&L</span>

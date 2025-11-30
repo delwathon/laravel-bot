@@ -339,43 +339,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Binance Connection -->
-                <div class="col-md-6">
-                    <div class="card border-0 bg-body-secondary">
-                        <div class="card-body p-3">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div class="d-flex align-items-center">
-                                    <div class="bg-warning bg-opacity-10 p-2 rounded-circle me-2">
-                                        <i class="bi bi-currency-bitcoin text-warning"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold">Binance</div>
-                                        <small class="text-muted">Trading Account</small>
-                                    </div>
-                                </div>
-                                <span class="badge bg-success bg-opacity-10 text-success">
-                                    <i class="bi bi-circle-fill" style="font-size: 6px;"></i> Connected
-                                </span>
-                            </div>
-                            <div class="small mb-2">
-                                <div class="d-flex justify-content-between">
-                                    <span class="text-muted">API Key</span>
-                                    <span class="fw-semibold">****...AB9C</span>
-                                </div>
-                            </div>
-                            <div class="small mb-3">
-                                <div class="d-flex justify-content-between">
-                                    <span class="text-muted">Connected</span>
-                                    <span class="fw-semibold">Jan 15, 2024</span>
-                                </div>
-                            </div>
-                            <a href="{{ route('user.exchanges.manage') }}" class="btn btn-sm btn-outline-warning w-100">
-                                <i class="bi bi-gear me-1"></i> Manage
-                            </a>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

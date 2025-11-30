@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('exchange_account_id')->constrained()->onDelete('cascade');
             
             // Position Details
-            $table->string('symbol'); // e.g., BTC/USDT
+            $table->string('symbol'); // e.g., BTCUSDT
             $table->string('exchange')->default('bybit');
             $table->enum('side', ['long', 'short']);
             $table->string('exchange_position_id')->nullable(); // Bybit position ID

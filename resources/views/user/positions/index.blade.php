@@ -133,14 +133,7 @@
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-4">
         <div class="row g-3">
-            <div class="col-lg-3">
-                <select class="form-select" id="filterExchange">
-                    <option value="">All Exchanges</option>
-                    <option value="bybit">Bybit</option>
-                    <option value="binance">Binance</option>
-                </select>
-            </div>
-            <div class="col-lg-2">
+            <div class="col-lg-4">
                 <select class="form-select" id="filterStatus">
                     <option value="">All Status</option>
                     <option value="profitable">Profitable</option>
@@ -148,7 +141,7 @@
                     <option value="at_risk">At Risk</option>
                 </select>
             </div>
-            <div class="col-lg-2">
+            <div class="col-lg-3">
                 <select class="form-select" id="filterType">
                     <option value="">All Types</option>
                     <option value="long">Long</option>
@@ -158,7 +151,7 @@
             <div class="col-lg-3">
                 <input type="text" class="form-select" placeholder="Search pair..." id="searchPair">
             </div>
-            <div class="col-lg-2">
+            <div class="col-lg-">
                 <button class="btn btn-outline-secondary w-100" onclick="location.reload()">
                     <i class="bi bi-arrow-clockwise me-1"></i>Refresh
                 </button>
@@ -205,8 +198,7 @@
                                     <i class="bi bi-currency-bitcoin text-warning"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">BTC/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-bold">BTCUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -266,8 +258,7 @@
                                     <i class="bi bi-currency-exchange text-info"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">ETH/USDT</div>
-                                    <small class="text-muted">Binance</small>
+                                    <div class="fw-bold">ETHUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -327,8 +318,7 @@
                                     <i class="bi bi-coin" style="color: #8b5cf6;"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">SOL/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-bold">SOLUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -388,8 +378,7 @@
                                     <i class="bi bi-currency-dollar text-success"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">XRP/USDT</div>
-                                    <small class="text-muted">Binance</small>
+                                    <div class="fw-bold">XRPUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -449,8 +438,7 @@
                                     <i class="bi bi-coin text-danger"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">AVAX/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-bold">AVAXUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -525,7 +513,7 @@
                         <h6 class="fw-bold mb-2">Position Summary</h6>
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Pair</span>
-                            <span class="fw-bold">BTC/USDT (Bybit)</span>
+                            <span class="fw-bold">BTCUSDT (Bybit)</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Current P&L</span>
@@ -575,7 +563,7 @@
                             <div class="card-body">
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Pair</span>
-                                    <span class="fw-bold">BTC/USDT</span>
+                                    <span class="fw-bold">BTCUSDT</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Entry Price</span>

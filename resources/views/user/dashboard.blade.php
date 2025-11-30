@@ -181,7 +181,7 @@
                                     <p class="mb-0 fw-semibold small">Trade Executed</p>
                                     <small class="text-muted">2m</small>
                                 </div>
-                                <p class="mb-1 small text-muted">BTC/USDT LONG • Bybit</p>
+                                <p class="mb-1 small text-muted">BTCUSDT LONG • Bybit</p>
                                 <span class="badge bg-success bg-opacity-10 text-success small">+$234</span>
                             </div>
                         </div>
@@ -197,7 +197,7 @@
                                     <p class="mb-0 fw-semibold small">New Signal</p>
                                     <small class="text-muted">5m</small>
                                 </div>
-                                <p class="mb-1 small text-muted">ETH/USDT • 85% confidence</p>
+                                <p class="mb-1 small text-muted">ETHUSDT • 85% confidence</p>
                             </div>
                         </div>
                     </div>
@@ -212,7 +212,7 @@
                                     <p class="mb-0 fw-semibold small">Take Profit Hit</p>
                                     <small class="text-muted">12m</small>
                                 </div>
-                                <p class="mb-1 small text-muted">SOL/USDT</p>
+                                <p class="mb-1 small text-muted">SOLUSDT</p>
                                 <span class="badge bg-success bg-opacity-10 text-success small">+$156</span>
                             </div>
                         </div>
@@ -228,7 +228,7 @@
                                     <p class="mb-0 fw-semibold small">Stop Loss Triggered</p>
                                     <small class="text-muted">28m</small>
                                 </div>
-                                <p class="mb-1 small text-muted">XRP/USDT</p>
+                                <p class="mb-1 small text-muted">XRPUSDT</p>
                                 <span class="badge bg-danger bg-opacity-10 text-danger small">-$45</span>
                             </div>
                         </div>
@@ -274,8 +274,7 @@
                                     <i class="bi bi-currency-bitcoin text-warning"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">BTC/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-bold">BTCUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -316,8 +315,7 @@
                                     <i class="bi bi-currency-exchange text-info"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">ETH/USDT</div>
-                                    <small class="text-muted">Binance</small>
+                                    <div class="fw-bold">ETHUSDT</div>
                                 </div>
                             </div>
                         </td>
@@ -358,8 +356,7 @@
                                     <i class="bi bi-coin" style="color: #8b5cf6;"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">SOL/USDT</div>
-                                    <small class="text-muted">Bybit</small>
+                                    <div class="fw-bold">SOLUSDT</div>
                                 </div>
                             </div>
                         </td>

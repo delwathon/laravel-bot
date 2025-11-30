@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('signals', function (Blueprint $table) {
             $table->id();
-            $table->string('symbol'); // e.g., BTC/USDT
+            $table->string('symbol'); // e.g., BTCUSDT
             $table->string('exchange')->default('bybit');
             $table->enum('type', ['long', 'short']);
             $table->enum('timeframe', ['1m', '5m', '15m', '30m', '1h', '4h', '1d'])->default('15m');

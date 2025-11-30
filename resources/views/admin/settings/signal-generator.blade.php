@@ -79,7 +79,7 @@
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="pair_btcusdt" name="pairs[]" value="BTCUSDT" checked>
                             <label class="form-check-label" for="pair_btcusdt">
-                                <i class="bi bi-currency-bitcoin text-warning me-1"></i>BTC/USDT
+                                <i class="bi bi-currency-bitcoin text-warning me-1"></i>BTCUSDT
                             </label>
                         </div>
                     </div>
@@ -87,7 +87,7 @@
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="pair_ethusdt" name="pairs[]" value="ETHUSDT" checked>
                             <label class="form-check-label" for="pair_ethusdt">
-                                <i class="bi bi-currency-exchange text-info me-1"></i>ETH/USDT
+                                <i class="bi bi-currency-exchange text-info me-1"></i>ETHUSDT
                             </label>
                         </div>
                     </div>
@@ -95,7 +95,7 @@
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="pair_solusdt" name="pairs[]" value="SOLUSDT" checked>
                             <label class="form-check-label" for="pair_solusdt">
-                                <i class="bi bi-coin text-purple me-1"></i>SOL/USDT
+                                <i class="bi bi-coin text-purple me-1"></i>SOLUSDT
                             </label>
                         </div>
                     </div>
@@ -103,7 +103,7 @@
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="pair_xrpusdt" name="pairs[]" value="XRPUSDT" checked>
                             <label class="form-check-label" for="pair_xrpusdt">
-                                <i class="bi bi-currency-dollar text-success me-1"></i>XRP/USDT
+                                <i class="bi bi-currency-dollar text-success me-1"></i>XRPUSDT
                             </label>
                         </div>
                     </div>
@@ -111,7 +111,7 @@
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="pair_adausdt" name="pairs[]" value="ADAUSDT">
                             <label class="form-check-label" for="pair_adausdt">
-                                <i class="bi bi-coin text-primary me-1"></i>ADA/USDT
+                                <i class="bi bi-coin text-primary me-1"></i>ADAUSDT
                             </label>
                         </div>
                     </div>
@@ -119,7 +119,7 @@
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="pair_avaxusdt" name="pairs[]" value="AVAXUSDT">
                             <label class="form-check-label" for="pair_avaxusdt">
-                                <i class="bi bi-coin text-danger me-1"></i>AVAX/USDT
+                                <i class="bi bi-coin text-danger me-1"></i>AVAXUSDT
                             </label>
                         </div>
                     </div>
@@ -127,7 +127,7 @@
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="pair_dotusdt" name="pairs[]" value="DOTUSDT">
                             <label class="form-check-label" for="pair_dotusdt">
-                                <i class="bi bi-coin text-pink me-1"></i>DOT/USDT
+                                <i class="bi bi-coin text-pink me-1"></i>DOTUSDT
                             </label>
                         </div>
                     </div>
@@ -135,7 +135,7 @@
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="pair_maticusdt" name="pairs[]" value="MATICUSDT">
                             <label class="form-check-label" for="pair_maticusdt">
-                                <i class="bi bi-coin text-purple me-1"></i>MATIC/USDT
+                                <i class="bi bi-coin text-purple me-1"></i>MATICUSDT
                             </label>
                         </div>
                     </div>
@@ -255,20 +255,25 @@
         </div>
         <div class="card-body p-4">
             <div class="row g-4">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Default Risk/Reward Ratio</label>
                     <input type="text" class="form-control form-control-lg" name="risk_reward" value="1:2" placeholder="1:2">
                     <div class="form-text">Minimum R:R for signal execution</div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Max Stop Loss (%)</label>
                     <input type="number" class="form-control form-control-lg" name="max_sl" value="2" min="0.5" max="10" step="0.1">
                     <div class="form-text">Maximum stop loss percentage</div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Position Size (% of Balance)</label>
-                    <input type="number" class="form-control form-control-lg" name="position_size" value="5" min="1" max="20">
+                    <input type="number" class="form-control form-control-lg" name="position_size" value="5" min="1" max="10">
                     <div class="form-text">Default position size per trade</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Leverage</label>
+                    <input type="text" class="form-control form-control-lg" name="leverage" value="Max">
+                    <div class="form-text">Default leverage size per trade</div>
                 </div>
             </div>
         </div>
@@ -291,15 +296,6 @@
                         </label>
                     </div>
                     <small class="text-muted">Generate signals for Bybit exchange</small>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="exchange_binance" name="exchanges[]" value="binance" checked>
-                        <label class="form-check-label fw-semibold" for="exchange_binance">
-                            <i class="bi bi-currency-bitcoin text-warning me-2"></i>Enable Binance
-                        </label>
-                    </div>
-                    <small class="text-muted">Generate signals for Binance exchange</small>
                 </div>
             </div>
         </div>

@@ -98,20 +98,13 @@
     <div class="card-body p-4">
         <div class="row g-3">
             <div class="col-lg-3">
-                <select class="form-select" id="filterExchange">
-                    <option value="">All Exchanges</option>
-                    <option value="bybit">Bybit</option>
-                    <option value="binance">Binance</option>
-                </select>
-            </div>
-            <div class="col-lg-2">
                 <select class="form-select" id="filterDirection">
                     <option value="">All Directions</option>
                     <option value="long">Long</option>
                     <option value="short">Short</option>
                 </select>
             </div>
-            <div class="col-lg-2">
+            <div class="col-lg-3">
                 <select class="form-select" id="filterConfidence">
                     <option value="">All Confidence</option>
                     <option value="high">High (&gt;80%)</option>
@@ -119,7 +112,7 @@
                     <option value="low">Low (&lt;60%)</option>
                 </select>
             </div>
-            <div class="col-lg-2">
+            <div class="col-lg-3">
                 <select class="form-select" id="filterStatus">
                     <option value="">All Status</option>
                     <option value="pending">Pending</option>
@@ -164,7 +157,6 @@
                     <tr>
                         <th class="border-0 px-4 py-3 fw-semibold">Time</th>
                         <th class="border-0 py-3 fw-semibold">Pair</th>
-                        <th class="border-0 py-3 fw-semibold">Exchange</th>
                         <th class="border-0 py-3 fw-semibold">Direction</th>
                         <th class="border-0 py-3 fw-semibold">Entry Price</th>
                         <th class="border-0 py-3 fw-semibold">Confidence</th>
@@ -178,7 +170,7 @@
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">14:23:15</div>
-                            <small class="text-muted">2 min ago</small>
+                            <small class="text-secondary">2 min ago</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -186,15 +178,9 @@
                                     <i class="bi bi-currency-bitcoin text-warning"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">BTC/USDT</div>
-                                    <small class="text-muted">Bitcoin</small>
+                                    <div class="fw-bold">BTCUSDT</div>
                                 </div>
                             </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-primary bg-opacity-10 text-primary">
-                                <i class="bi bi-coin me-1"></i>Bybit
-                            </span>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
@@ -203,7 +189,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$66,450</div>
-                            <small class="text-muted">TP: $67,200</small>
+                            <small class="text-secondary">TP: $67,200</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -243,7 +229,7 @@
                     <tr class="table-success bg-opacity-10">
                         <td class="px-4">
                             <div class="small fw-semibold">14:08:42</div>
-                            <small class="text-muted">17 min ago</small>
+                            <small class="text-secondary">17 min ago</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -251,15 +237,9 @@
                                     <i class="bi bi-currency-exchange text-info"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">ETH/USDT</div>
-                                    <small class="text-muted">Ethereum</small>
+                                    <div class="fw-bold">ETHUSDT</div>
                                 </div>
                             </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning bg-opacity-10 text-warning">
-                                <i class="bi bi-currency-bitcoin me-1"></i>Binance
-                            </span>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
@@ -268,7 +248,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$3,245</div>
-                            <small class="text-muted">TP: $3,310</small>
+                            <small class="text-secondary">TP: $3,310</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -306,7 +286,7 @@
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">13:53:20</div>
-                            <small class="text-muted">32 min ago</small>
+                            <small class="text-secondary">32 min ago</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -314,15 +294,9 @@
                                     <i class="bi bi-coin" style="color: #8b5cf6;"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">SOL/USDT</div>
-                                    <small class="text-muted">Solana</small>
+                                    <div class="fw-bold">SOLUSDT</div>
                                 </div>
                             </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-primary bg-opacity-10 text-primary">
-                                <i class="bi bi-coin me-1"></i>Bybit
-                            </span>
                         </td>
                         <td>
                             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
@@ -331,7 +305,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$145.80</div>
-                            <small class="text-muted">TP: $142.50</small>
+                            <small class="text-secondary">TP: $142.50</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -371,7 +345,6 @@
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">13:38:05</div>
-                            <small class="text-muted">47 min ago</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -379,15 +352,10 @@
                                     <i class="bi bi-currency-dollar text-success"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">XRP/USDT</div>
-                                    <small class="text-muted">Ripple</small>
+                                    <div class="fw-bold">XRPUSDT</div>
+                                    <small class="text-secondary">Ripple</small>
                                 </div>
                             </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning bg-opacity-10 text-warning">
-                                <i class="bi bi-currency-bitcoin me-1"></i>Binance
-                            </span>
                         </td>
                         <td>
                             <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
@@ -396,7 +364,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$0.5234</div>
-                            <small class="text-muted">TP: $0.5450</small>
+                            <small class="text-secondary">TP: $0.5450</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -432,7 +400,6 @@
                     <tr class="table-success bg-opacity-10">
                         <td class="px-4">
                             <div class="small fw-semibold">13:23:18</div>
-                            <small class="text-muted">1h ago</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -440,15 +407,10 @@
                                     <i class="bi bi-coin text-danger"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">AVAX/USDT</div>
-                                    <small class="text-muted">Avalanche</small>
+                                    <div class="fw-bold">AVAXUSDT</div>
+                                    <small class="text-secondary">Avalanche</small>
                                 </div>
                             </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-primary bg-opacity-10 text-primary">
-                                <i class="bi bi-coin me-1"></i>Bybit
-                            </span>
                         </td>
                         <td>
                             <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
@@ -457,7 +419,7 @@
                         </td>
                         <td>
                             <div class="fw-semibold">$28.45</div>
-                            <small class="text-muted">TP: $27.80</small>
+                            <small class="text-secondary">TP: $27.80</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -540,21 +502,6 @@
                         <li>Signals will be ready for execution in 30-60 seconds</li>
                     </ul>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Select Exchanges</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="exchangeBybit" checked>
-                        <label class="form-check-label" for="exchangeBybit">
-                            <i class="bi bi-coin text-primary me-1"></i>Bybit
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="exchangeBinance" checked>
-                        <label class="form-check-label" for="exchangeBinance">
-                            <i class="bi bi-currency-bitcoin text-warning me-1"></i>Binance
-                        </label>
-                    </div>
-                </div>
             </div>
             <div class="modal-footer border-0">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -584,11 +531,7 @@
                                 <h6 class="fw-bold mb-3">Trade Information</h6>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Pair</span>
-                                    <span class="fw-bold">BTC/USDT</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Exchange</span>
-                                    <span class="badge bg-primary">Bybit</span>
+                                    <span class="fw-bold">BTCUSDT</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Direction</span>

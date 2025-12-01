@@ -16,10 +16,10 @@ class AdminUserSeeder extends Seeder
     {
         // Create admin user
         User::create([
-            'name' => 'Admin User',
-            'first_name' => 'Admin',
-            'last_name' => 'User',
-            'email' => 'admin@cryptobot.com',
+            'name' => 'Rilwan Adelaja',
+            'first_name' => 'Rilwan',
+            'last_name' => 'Adelaja',
+            'email' => 'younghardehlaja@gmail.com',
             'password' => Hash::make('password'),
             'is_admin' => true,
             'email_verified_at' => now(),
@@ -27,10 +27,10 @@ class AdminUserSeeder extends Seeder
 
         // Create test regular user
         User::create([
-            'name' => 'Rilwan Adelaja',
-            'first_name' => 'Rilwan',
-            'last_name' => 'Adelaja',
-            'email' => 'younghardehlaja@gmail.com',
+            'name' => 'Abiodun Afuwape',
+            'first_name' => 'Abiodun',
+            'last_name' => 'Afuwape',
+            'email' => 'abiodunafuwape@gmail.com',
             'password' => Hash::make('password'),
             'is_admin' => false,
             'email_verified_at' => now(),

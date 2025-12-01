@@ -26,7 +26,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Active Positions</div>
-                        <h3 class="fw-bold mb-0 text-info">{{ $stats['active_trades'] ?? 0 }}</h3>
+                        <h3 class="fw-bold mb-0 text-info">{{ $stats['active_trades'] }}</h3>
                     </div>
                     <div class="bg-info bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-graph-up-arrow text-info fs-4"></i>
@@ -45,15 +45,15 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Total Volume (24h)</div>
-                        <h3 class="fw-bold mb-0">${{ number_format($stats['total_volume'] ?? 0, 0) }}</h3>
+                        <h3 class="fw-bold mb-0">${{ number_format($stats['total_volume'], 0) }}</h3>
                     </div>
                     <div class="bg-primary bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-cash-stack text-primary fs-4"></i>
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="badge bg-primary bg-opacity-10 text-primary">
-                        <i class="bi bi-arrow-up"></i> +12.5%
+                    <span class="badge bg-{{ $stats['volume_change'] >= 0 ? 'success' : 'danger' }} bg-opacity-10 text-{{ $stats['volume_change'] >= 0 ? 'success' : 'danger' }}">
+                        <i class="bi bi-arrow-{{ $stats['volume_change'] >= 0 ? 'up' : 'down' }}"></i> {{ number_format(abs($stats['volume_change']), 1) }}%
                     </span>
                 </div>
             </div>
@@ -66,10 +66,12 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Total Profit</div>
-                        <h3 class="fw-bold mb-0 text-success">${{ number_format($stats['total_profit'] ?? 0, 2) }}</h3>
+                        <h3 class="fw-bold mb-0 {{ $stats['total_profit'] >= 0 ? 'text-success' : 'text-danger' }}">
+                            ${{ number_format($stats['total_profit'], 2) }}
+                        </h3>
                     </div>
-                    <div class="bg-success bg-opacity-10 p-3 rounded-3">
-                        <i class="bi bi-trophy-fill text-success fs-4"></i>
+                    <div class="bg-{{ $stats['total_profit'] >= 0 ? 'success' : 'danger' }} bg-opacity-10 p-3 rounded-3">
+                        <i class="bi bi-trophy-fill text-{{ $stats['total_profit'] >= 0 ? 'success' : 'danger' }} fs-4"></i>
                     </div>
                 </div>
                 <div class="mt-3">
@@ -85,7 +87,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Affected Users</div>
-                        <h3 class="fw-bold mb-0 text-warning">{{ $stats['affected_users'] ?? 0 }}</h3>
+                        <h3 class="fw-bold mb-0 text-warning">{{ $stats['affected_users'] }}</h3>
                     </div>
                     <div class="bg-warning bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-people-fill text-warning fs-4"></i>
@@ -104,7 +106,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Admin Trades (24h)</div>
-                        <h3 class="fw-bold mb-0">23</h3>
+                        <h3 class="fw-bold mb-0">{{ $stats['admin_trades_today'] }}</h3>
                     </div>
                     <div class="bg-primary bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-person-badge text-primary fs-4"></i>
@@ -112,7 +114,7 @@
                 </div>
                 <div class="mt-3">
                     <span class="badge bg-success bg-opacity-10 text-success">
-                        <i class="bi bi-arrow-up"></i> 18 Long, 5 Short
+                        <i class="bi bi-arrow-up"></i> {{ $stats['long_trades'] }} Long, {{ $stats['short_trades'] }} Short
                     </span>
                 </div>
             </div>
@@ -125,14 +127,14 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">User Trades (24h)</div>
-                        <h3 class="fw-bold mb-0 text-info">5,704</h3>
+                        <h3 class="fw-bold mb-0 text-info">{{ number_format($stats['user_trades_today']) }}</h3>
                     </div>
                     <div class="bg-info bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-people-fill text-info fs-4"></i>
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="text-muted small">248 users × avg 23 trades</span>
+                    <span class="text-muted small">{{ $stats['active_users'] }} users active</span>
                 </div>
             </div>
         </div>
@@ -144,14 +146,14 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Success Rate</div>
-                        <h3 class="fw-bold mb-0 text-success">95.7%</h3>
+                        <h3 class="fw-bold mb-0 text-success">{{ number_format($stats['win_rate'], 1) }}%</h3>
                     </div>
                     <div class="bg-success bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-check-circle-fill text-success fs-4"></i>
                     </div>
                 </div>
                 <div class="mt-3">
-                    <span class="text-muted small">22 of 23 propagated</span>
+                    <span class="text-muted small">{{ $stats['winning_trades'] }} of {{ $stats['closed_trades'] }} won</span>
                 </div>
             </div>
         </div>
@@ -163,7 +165,7 @@
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="text-muted text-uppercase small fw-bold mb-1">Active Admin Positions</div>
-                        <h3 class="fw-bold mb-0 text-warning">8</h3>
+                        <h3 class="fw-bold mb-0 text-warning">{{ $stats['open_trades'] }}</h3>
                     </div>
                     <div class="bg-warning bg-opacity-10 p-3 rounded-3">
                         <i class="bi bi-graph-up text-warning fs-4"></i>
@@ -183,270 +185,73 @@
         <h5 class="fw-bold mb-0">
             <i class="bi bi-plus-circle me-2"></i>Execute New Admin Trade
         </h5>
+        <p class="text-muted small mb-0 mt-2">
+            Trades will use position size ({{ $positionSize }}%) and leverage ({{ $leverage }}) from signal generator settings
+        </p>
     </div>
     <div class="card-body p-4">
-        <form id="executeTradeForm">
+        <form id="executeTradeForm" method="POST" action="{{ route('admin.trades.store') }}">
+            @csrf
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Trading Pair</label>
-                    <input type="text" class="form-control" placeholder="10000PEPE" required>
+                    <input type="text" class="form-control" name="symbol" placeholder="BTCUSDT" required>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Direction</label>
-                    <select class="form-select" required>
+                    <select class="form-select" name="type" required>
                         <option value="">Select</option>
                         <option value="long">LONG</option>
                         <option value="short">SHORT</option>
                     </select>
                 </div>
                 <div class="col-md-2">
+                    <label class="form-label fw-semibold">Order Type</label>
+                    <select class="form-select" name="order_type" required>
+                        <option value="Market">Market</option>
+                        <option value="Limit">Limit</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="form-label fw-semibold">Entry Price</label>
-                    <input type="number" class="form-control" placeholder="66450.00" step="0.01" required>
+                    <input type="number" class="form-control" name="entry_price" placeholder="66450.00" step="0.000001" required>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Take Profit</label>
-                    <input type="number" class="form-control" placeholder="67200.00" step="0.01" required>
+                    <input type="number" class="form-control" name="take_profit" placeholder="67200.00" step="0.000001" required>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-semibold">Stop Loss</label>
-                    <input type="number" class="form-control" placeholder="65900.00" step="0.01" required>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-semibold">Order Type</label>
-                    <select class="form-select" required>
-                        <option value="market">Market</option>
-                        <option value="limit">Limit</option>
-                    </select>
+                    <input type="number" class="form-control" name="stop_loss" placeholder="65900.00" step="0.000001" required>
                 </div>
             </div>
             <div class="row g-3 mt-2">
                 <div class="col-12">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="propagateToUsers" checked>
-                        <label class="form-check-label fw-semibold" for="propagateToUsers">
-                            <i class="bi bi-broadcast text-primary me-1"></i>
-                            Propagate to all active users after successful execution
-                        </label>
-                    </div>
+                    <button type="button" class="btn btn-outline-secondary" onclick="previewTrade()">
+                        <i class="bi bi-eye me-2"></i>Preview Impact
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-play-circle-fill me-2"></i>Execute for All Users
+                    </button>
                 </div>
-            </div>
-            <div class="d-flex gap-2 mt-4">
-                <button type="submit" class="btn btn-success btn-lg">
-                    <i class="bi bi-play-circle-fill me-2"></i>Execute Admin Trade
-                </button>
-                <button type="button" class="btn btn-outline-secondary btn-lg" data-bs-toggle="modal" data-bs-target="#previewTradeModal">
-                    <i class="bi bi-eye me-2"></i>Preview Impact
-                </button>
-                <button type="reset" class="btn btn-outline-danger btn-lg">
-                    <i class="bi bi-x-circle me-2"></i>Clear
-                </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Active Admin Positions -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-header bg-transparent border-0 p-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="fw-bold mb-1">Active Admin Positions</h5>
-                <p class="text-muted small mb-0">Positions currently open on admin account</p>
-            </div>
-            <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#closeAllModal">
-                <i class="bi bi-x-octagon me-2"></i>Close All Positions
-            </button>
-        </div>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-body-secondary">
-                    <tr>
-                        <th class="border-0 px-4 py-3 fw-semibold">Pair</th>
-                        <th class="border-0 py-3 fw-semibold">Direction</th>
-                        <th class="border-0 py-3 fw-semibold">Entry Price</th>
-                        <th class="border-0 py-3 fw-semibold">Current Price</th>
-                        <th class="border-0 py-3 fw-semibold">Size</th>
-                        <th class="border-0 py-3 fw-semibold">P&L</th>
-                        <th class="border-0 py-3 fw-semibold">User Mirrors</th>
-                        <th class="border-0 py-3 fw-semibold text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Position 1 -->
-                    <tr>
-                        <td class="px-4">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-warning bg-opacity-10 p-2 rounded-circle me-2">
-                                    <i class="bi bi-currency-bitcoin text-warning"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold">BTCUSDT</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-arrow-up-right me-1"></i>LONG
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$66,450</div>
-                            <small class="text-secondary">5x leverage</small>
-                        </td>
-                        <td>
-                            <div class="fw-semibold text-success">$66,823</div>
-                            <small class="text-success">+0.56%</small>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">0.15 BTC</div>
-                            <small class="text-secondary">~$10,023</small>
-                        </td>
-                        <td>
-                            <div class="text-success fw-bold">+$279.45</div>
-                            <small class="text-success">+2.79%</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-info rounded-pill">248 users</span>
-                            <div class="small text-secondary">All active</div>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary" title="Monitor">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button class="btn btn-outline-warning" title="Modify">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-outline-danger" title="Close" data-bs-toggle="modal" data-bs-target="#closePositionModal">
-                                    <i class="bi bi-x-circle"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- Position 2 -->
-                    <tr>
-                        <td class="px-4">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-info bg-opacity-10 p-2 rounded-circle me-2">
-                                    <i class="bi bi-currency-exchange text-info"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold">ETHUSDT</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-arrow-up-right me-1"></i>LONG
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$3,245</div>
-                            <small class="text-secondary">3x leverage</small>
-                        </td>
-                        <td>
-                            <div class="fw-semibold text-success">$3,298</div>
-                            <small class="text-success">+1.63%</small>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">3.0 ETH</div>
-                            <small class="text-secondary">~$9,894</small>
-                        </td>
-                        <td>
-                            <div class="text-success fw-bold">+$485.22</div>
-                            <small class="text-success">+4.90%</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-info rounded-pill">231 users</span>
-                            <div class="small text-muted">17 excluded</div>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button class="btn btn-outline-warning">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#closePositionModal">
-                                    <i class="bi bi-x-circle"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- Position 3 - Loss -->
-                    <tr class="table-danger bg-opacity-10">
-                        <td class="px-4">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-purple bg-opacity-10 p-2 rounded-circle me-2" style="background-color: rgba(139, 92, 246, 0.1) !important;">
-                                    <i class="bi bi-coin" style="color: #8b5cf6;"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold">SOLUSDT</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-danger bg-opacity-10 text-danger">
-                                <i class="bi bi-arrow-down-right me-1"></i>SHORT
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$145.80</div>
-                            <small class="text-secondary">2x leverage</small>
-                        </td>
-                        <td>
-                            <div class="fw-semibold text-danger">$147.23</div>
-                            <small class="text-danger">+0.98%</small>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">50 SOL</div>
-                            <small class="text-secondary">~$7,361</small>
-                        </td>
-                        <td>
-                            <div class="text-danger fw-bold">-$144.15</div>
-                            <small class="text-danger">-1.96%</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-info rounded-pill">248 users</span>
-                            <div class="small text-muted">All active</div>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button class="btn btn-outline-warning">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#closePositionModal">
-                                    <i class="bi bi-x-circle"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- Recent Admin Trades History -->
+<!-- Recent Admin Trades -->
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-transparent border-0 p-4">
         <div class="d-flex justify-content-between align-items-center">
             <div>
                 <h5 class="fw-bold mb-1">Recent Admin Trades</h5>
-                <p class="text-muted small mb-0">Execution history for the last 24 hours</p>
+                <p class="text-muted small mb-0">Manually executed trades and their propagation status</p>
             </div>
-            <a href="{{ route('admin.history.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-clock-history me-2"></i>Full History
-            </a>
+            @if($trades->where('status', 'open')->count() > 0)
+            <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#closeAllModal">
+                <i class="bi bi-x-octagon me-2"></i>Close All Positions
+            </button>
+            @endif
         </div>
     </div>
     <div class="card-body p-0">
@@ -456,163 +261,125 @@
                     <tr>
                         <th class="border-0 px-4 py-3 fw-semibold">Time</th>
                         <th class="border-0 py-3 fw-semibold">Pair</th>
-                        <th class="border-0 py-3 fw-semibold">Type</th>
-                        <th class="border-0 py-3 fw-semibold">Price</th>
-                        <th class="border-0 py-3 fw-semibold">Size</th>
+                        <th class="border-0 py-3 fw-semibold">Direction</th>
+                        <th class="border-0 py-3 fw-semibold">Entry</th>
+                        <th class="border-0 py-3 fw-semibold">TP / SL</th>
+                        <th class="border-0 py-3 fw-semibold">User Trades</th>
+                        <th class="border-0 py-3 fw-semibold">P&L</th>
                         <th class="border-0 py-3 fw-semibold">Status</th>
-                        <th class="border-0 py-3 fw-semibold">Propagation</th>
-                        <th class="border-0 py-3 fw-semibold text-end">Result</th>
+                        <th class="border-0 px-4 py-3 fw-semibold text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Trade 1 - Success -->
+                    @forelse($trades as $trade)
                     <tr>
                         <td class="px-4">
-                            <div class="small fw-semibold">14:23:15</div>
-                            <small class="text-secondary">2m ago</small>
+                            <div class="small fw-semibold">{{ $trade->created_at->format('H:i:s') }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">{{ $trade->created_at->format('M d') }}</div>
                         </td>
                         <td>
-                            <div class="fw-semibold">BTCUSDT</div>
+                            <div class="fw-semibold">{{ $trade->symbol }}</div>
                         </td>
                         <td>
-                            <span class="badge bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-arrow-up-right me-1"></i>BUY/LONG
+                            <span class="badge {{ $trade->type === 'long' ? 'bg-success' : 'bg-danger' }} bg-opacity-10 {{ $trade->type === 'long' ? 'text-success' : 'text-danger' }} border border-{{ $trade->type === 'long' ? 'success' : 'danger' }} border-opacity-25">
+                                {{ strtoupper($trade->type) }}
                             </span>
                         </td>
                         <td>
-                            <div class="fw-semibold">$66,450</div>
+                            <div class="fw-semibold">${{ number_format($trade->entry_price, 2) }}</div>
                         </td>
                         <td>
-                            <div class="fw-semibold">0.15 BTC</div>
-                            <small class="text-secondary">$9,968</small>
+                            <div class="small">
+                                <span class="text-success">${{ number_format($trade->take_profit, 2) }}</span>
+                                <span class="text-muted">/</span>
+                                <span class="text-danger">${{ number_format($trade->stop_loss, 2) }}</span>
+                            </div>
                         </td>
                         <td>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                <i class="bi bi-check-circle"></i> Executed
+                            @php
+                                $userTrades = $trade->signal ? $trade->signal->trades()->count() : 0;
+                                $successfulTrades = $trade->signal ? $trade->signal->trades()->where('status', '!=', 'failed')->count() : 0;
+                            @endphp
+                            <div class="d-flex align-items-center">
+                                <div class="progress me-2" style="width: 60px; height: 6px;">
+                                    @if($userTrades > 0)
+                                        <div class="progress-bar bg-success" style="width: {{ ($successfulTrades / $userTrades) * 100 }}%"></div>
+                                    @endif
+                                </div>
+                                <span class="small fw-semibold">{{ $successfulTrades }}/{{ $userTrades }}</span>
+                            </div>
+                            @if($userTrades > 0)
+                                <small class="text-muted">{{ number_format(($successfulTrades / $userTrades) * 100, 1) }}% success</small>
+                            @endif
+                        </td>
+                        <td>
+                            @if($trade->status === 'closed')
+                                <div class="fw-bold {{ $trade->realized_pnl >= 0 ? 'text-success' : 'text-danger' }}">
+                                    {{ $trade->realized_pnl >= 0 ? '+' : '' }}${{ number_format($trade->realized_pnl, 2) }}
+                                </div>
+                                <div class="small text-muted">
+                                    {{ $trade->realized_pnl >= 0 ? '+' : '' }}{{ number_format($trade->realized_pnl_percent, 2) }}%
+                                </div>
+                            @else
+                                @php
+                                    $position = $trade->position;
+                                    $unrealizedPnl = $position ? $position->unrealized_pnl : 0;
+                                @endphp
+                                <div class="fw-bold {{ $unrealizedPnl >= 0 ? 'text-success' : 'text-danger' }}">
+                                    {{ $unrealizedPnl >= 0 ? '+' : '' }}${{ number_format($unrealizedPnl, 2) }}
+                                </div>
+                                <div class="small text-muted">Unrealized</div>
+                            @endif
+                        </td>
+                        <td>
+                            @php
+                                $statusConfig = match($trade->status) {
+                                    'open' => ['color' => 'success', 'icon' => 'circle-fill', 'text' => 'Active'],
+                                    'closed' => ['color' => 'secondary', 'icon' => 'check-circle-fill', 'text' => 'Closed'],
+                                    'failed' => ['color' => 'danger', 'icon' => 'x-circle-fill', 'text' => 'Failed'],
+                                    default => ['color' => 'warning', 'icon' => 'clock-fill', 'text' => ucfirst($trade->status)]
+                                };
+                            @endphp
+                            <span class="badge bg-{{ $statusConfig['color'] }} bg-opacity-10 text-{{ $statusConfig['color'] }} border border-{{ $statusConfig['color'] }} border-opacity-25">
+                                <i class="bi bi-{{ $statusConfig['icon'] }}" style="font-size: 6px;"></i> {{ $statusConfig['text'] }}
                             </span>
+                            @if($trade->status === 'open' && $trade->position)
+                                <div class="text-muted small mt-1">
+                                    {{ $trade->created_at->diffForHumans() }}
+                                </div>
+                            @endif
                         </td>
-                        <td>
-                            <span class="badge bg-success rounded-pill">248/248</span>
-                            <div class="small text-success">100% success</div>
-                        </td>
-                        <td class="text-end">
-                            <div class="text-success fw-semibold">Active</div>
-                            <small class="text-secondary">Position open</small>
+                        <td class="px-4 text-end">
+                            <div class="btn-group btn-group-sm">
+                                @if($trade->status === 'open')
+                                    <button class="btn btn-outline-danger" onclick="closePosition({{ $trade->id }}, '{{ $trade->symbol }}')" title="Close Position">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                @endif
+                                <button class="btn btn-outline-primary" onclick="viewTradeDetails({{ $trade->id }})" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
-
-                    <!-- Trade 2 - Closed with profit -->
+                    @empty
                     <tr>
-                        <td class="px-4">
-                            <div class="small fw-semibold">13:45:22</div>
-                            <small class="text-secondary">40m ago</small>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">ETHUSDT</div>
-                        </td>
-                        <td>
-                            <span class="badge bg-danger bg-opacity-10 text-danger">
-                                <i class="bi bi-arrow-down-left me-1"></i>SELL/CLOSE
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$3,298</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">2.5 ETH</div>
-                            <small class="text-secondary">$8,245</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                <i class="bi bi-check-circle"></i> Executed
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge bg-success rounded-pill">231/248</span>
-                            <div class="small text-success">93.1% success</div>
-                        </td>
-                        <td class="text-end">
-                            <div class="text-success fw-semibold">+$423.50</div>
-                            <small class="text-success">+5.4%</small>
+                        <td colspan="9" class="text-center py-5">
+                            <i class="bi bi-inbox fs-1 text-muted d-block mb-3"></i>
+                            <p class="text-muted">No admin trades executed yet.</p>
                         </td>
                     </tr>
-
-                    <!-- Trade 3 - Partial propagation -->
-                    <tr>
-                        <td class="px-4">
-                            <div class="small fw-semibold">12:18:05</div>
-                            <small class="text-secondary">2h ago</small>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">XRPUSDT</div>
-                        </td>
-                        <td>
-                            <span class="badge bg-danger bg-opacity-10 text-danger">
-                                <i class="bi bi-arrow-down-right me-1"></i>SELL/SHORT
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$0.5234</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">15,000 XRP</div>
-                            <small class="text-secondary">$7,851</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                <i class="bi bi-check-circle"></i> Executed
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning rounded-pill">215/248</span>
-                            <div class="small text-warning">86.7% success</div>
-                        </td>
-                        <td class="text-end">
-                            <div class="text-success fw-semibold">Active</div>
-                            <small class="text-secondary">Position open</small>
-                        </td>
-                    </tr>
-
-                    <!-- Trade 4 - Failed -->
-                    <tr class="table-danger bg-opacity-10">
-                        <td class="px-4">
-                            <div class="small fw-semibold">11:32:41</div>
-                            <small class="text-secondary">3h ago</small>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">AVAXUSDT</div>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-arrow-up-right me-1"></i>BUY/LONG
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$28.45</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">200 AVAX</div>
-                            <small class="text-secondary">$5,690</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
-                                <i class="bi bi-x-circle"></i> Failed
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary rounded-pill">0/248</span>
-                            <div class="small text-danger">Not propagated</div>
-                        </td>
-                        <td class="text-end">
-                            <div class="text-danger fw-semibold">Failed</div>
-                            <small class="text-secondary">Insufficient funds</small>
-                        </td>
-                    </tr>
-
+                    @endforelse
                 </tbody>
             </table>
         </div>
     </div>
+
+    @if($trades->hasPages())
+    <div class="card-footer bg-transparent border-0 p-4">
+        {{ $trades->links() }}
+    </div>
+    @endif
 </div>
 
 <!-- Close Position Modal -->
@@ -625,41 +392,31 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p class="mb-3">Are you sure you want to close this admin position?</p>
-                <div class="alert alert-warning border-0 mb-3">
-                    <strong>This will:</strong>
-                    <ul class="mb-0 mt-2 small">
-                        <li>Close your admin position immediately</li>
-                        <li>Trigger close orders for all 248 user positions</li>
-                        <li>Lock in current P&L for all users</li>
-                        <li>Cannot be undone</li>
-                    </ul>
-                </div>
-                <div class="card border-0 bg-body-secondary mb-3">
-                    <div class="card-body">
-                        <h6 class="fw-bold mb-2">Position Summary</h6>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">Pair</span>
-                            <span class="fw-bold">BTCUSDT</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">Current P&L</span>
-                            <span class="text-success fw-bold">+$279.45</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span class="text-muted">User Mirrors</span>
-                            <span class="fw-bold">248 positions</span>
-                        </div>
+            <form id="closePositionForm" method="POST">
+                @csrf
+                @method('DELETE')
+                <div class="modal-body">
+                    <p class="mb-3">Are you sure you want to close this admin position?</p>
+                    <div class="alert alert-warning border-0 mb-3">
+                        <strong>This will:</strong>
+                        <ul class="mb-0 mt-2 small">
+                            <li>Close your admin position immediately</li>
+                            <li>Trigger close orders for all user positions</li>
+                            <li>Lock in current P&L for all users</li>
+                            <li>Cannot be undone</li>
+                        </ul>
+                    </div>
+                    <div class="card border-0 bg-body-secondary mb-3" id="closePositionSummary">
+                        <!-- Populated by JavaScript -->
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger">
-                    <i class="bi bi-x-circle me-2"></i>Close Position
-                </button>
-            </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle me-2"></i>Close Position
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -674,28 +431,31 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p class="mb-3">Are you sure you want to close ALL admin positions?</p>
-                <div class="alert alert-danger border-0 mb-3">
-                    <strong>CRITICAL WARNING:</strong>
-                    <ul class="mb-0 mt-2 small">
-                        <li>This will close ALL 8 admin positions</li>
-                        <li>Will trigger close orders for ALL user positions across all pairs</li>
-                        <li>Total estimated affected trades: ~1,984 positions</li>
-                        <li>This action cannot be undone</li>
-                    </ul>
+            <form method="POST" action="{{ route('admin.trades.close-all') }}">
+                @csrf
+                <div class="modal-body">
+                    <p class="mb-3">Are you sure you want to close ALL admin positions?</p>
+                    <div class="alert alert-danger border-0 mb-3">
+                        <strong>CRITICAL WARNING:</strong>
+                        <ul class="mb-0 mt-2 small">
+                            <li>This will close ALL {{ $stats['open_trades'] }} admin positions</li>
+                            <li>Will trigger close orders for ALL user positions across all pairs</li>
+                            <li>Total estimated affected trades: ~{{ $stats['active_trades'] }} positions</li>
+                            <li>This action cannot be undone</li>
+                        </ul>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Type "CLOSE ALL" to confirm</label>
+                        <input type="text" class="form-control" id="confirmCloseAll" placeholder="Type CLOSE ALL" required>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Type "CLOSE ALL" to confirm</label>
-                    <input type="text" class="form-control" placeholder="Type CLOSE ALL">
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="closeAllBtn" disabled>
+                        <i class="bi bi-x-octagon me-2"></i>Close All Positions
+                    </button>
                 </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" disabled>
-                    <i class="bi bi-x-octagon me-2"></i>Close All Positions
-                </button>
-            </div>
+            </form>
         </div>
     </div>
 </div>
@@ -710,50 +470,31 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="card border-0 bg-body-secondary">
-                            <div class="card-body">
-                                <h6 class="fw-bold mb-3">Admin Trade</h6>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Position Size</span>
-                                    <span class="fw-bold">$10,000</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Potential Profit (TP)</span>
-                                    <span class="text-success fw-bold">+$750</span>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <span class="text-muted">Potential Loss (SL)</span>
-                                    <span class="text-danger fw-bold">-$550</span>
-                                </div>
-                            </div>
-                        </div>
+            <div class="modal-body" id="previewContent">
+                <!-- Populated by JavaScript -->
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trade Details Modal -->
+<div class="modal fade" id="tradeDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-info-circle me-2"></i>Trade Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="tradeDetailsContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
-                    <div class="col-md-6">
-                        <div class="card border-0 bg-body-secondary">
-                            <div class="card-body">
-                                <h6 class="fw-bold mb-3">User Impact (248 users)</h6>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Total Volume</span>
-                                    <span class="fw-bold">~$2,480,000</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Est. User Profit (TP)</span>
-                                    <span class="text-success fw-bold">+$186,000</span>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <span class="text-muted">Est. User Loss (SL)</span>
-                                    <span class="text-danger fw-bold">-$136,400</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="alert alert-info border-0 mt-3 mb-0">
-                    <i class="bi bi-info-circle me-2"></i>
-                    <small>Estimated values based on current user portfolio sizes. Actual results may vary based on available balance and risk settings.</small>
                 </div>
             </div>
             <div class="modal-footer border-0">
@@ -767,13 +508,330 @@
 
 @push('scripts')
 <script>
-    document.getElementById('executeTradeForm').addEventListener('submit', function(e) {
-        e.preventDefault();
+// Execute trade form submission
+document.getElementById('executeTradeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if(confirm('Execute this trade for admin account and propagate to all users?')) {
+        const btn = this.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Executing...';
+        this.submit();
+    }
+});
+
+// Close position
+function closePosition(tradeId, symbol) {
+    const form = document.getElementById('closePositionForm');
+    form.action = `/admin/trades/${tradeId}`;
+    
+    // Show loading state
+    document.getElementById('closePositionSummary').innerHTML = `
+        <div class="card-body">
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted mt-2">Fetching position details...</p>
+            </div>
+        </div>
+    `;
+    
+    new bootstrap.Modal(document.getElementById('closePositionModal')).show();
+    
+    // Fetch actual trade details
+    fetch(`/admin/trades/${tradeId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            const currentPnL = data.realized_pnl || 0;
+            const statusBadge = data.status === 'open' 
+                ? '<span class="badge bg-success">Open</span>' 
+                : '<span class="badge bg-secondary">Closed</span>';
+            
+            document.getElementById('closePositionSummary').innerHTML = `
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Position Summary</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Pair</span>
+                        <span class="fw-bold">${data.symbol}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Type</span>
+                        <span class="fw-bold text-uppercase">${data.type}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Entry Price</span>
+                        <span class="fw-bold">$${parseFloat(data.entry_price).toFixed(2)}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Quantity</span>
+                        <span class="fw-bold">${data.quantity}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Leverage</span>
+                        <span class="fw-bold">${data.leverage}x</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Status</span>
+                        <span>${statusBadge}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Current P&L</span>
+                        <span class="fw-bold ${currentPnL >= 0 ? 'text-success' : 'text-danger'}">
+                            ${currentPnL >= 0 ? '+' : ''}$${parseFloat(currentPnL).toFixed(2)}
+                        </span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">User Trades</span>
+                        <span class="fw-bold">${data.user_trades_total}</span>
+                    </div>
+                    <div class="alert alert-warning border-0 mt-3 mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <small>Closing this position will also close all ${data.user_trades_total} associated user trades.</small>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('closePositionSummary').innerHTML = `
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Failed to load position details. Please try again.
+                    </div>
+                </div>
+            `;
+        });
+}
+
+// Preview trade impact
+function previewTrade() {
+    const form = document.getElementById('executeTradeForm');
+    const formData = new FormData(form);
+    
+    const symbol = formData.get('symbol');
+    const type = formData.get('type');
+    const entryPrice = parseFloat(formData.get('entry_price') || 0);
+    const takeProfit = parseFloat(formData.get('take_profit') || 0);
+    const stopLoss = parseFloat(formData.get('stop_loss') || 0);
+    
+    const positionSize = {{ $positionSize }};
+    const leverageDisplay = '{{ $leverage }}';
+    const adminBalance = {{ $adminBalance }};
+    
+    if (!symbol || !entryPrice || !takeProfit || !stopLoss || !type) {
+        alert('Please fill in all required fields');
+        return;
+    }
+    
+    // Show loading state
+    document.getElementById('previewContent').innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Calculating...</span>
+            </div>
+            <p class="text-muted mt-2">Fetching leverage information for ${symbol}...</p>
+        </div>
+    `;
+    new bootstrap.Modal(document.getElementById('previewTradeModal')).show();
+    
+    // Fetch max leverage for this specific symbol
+    fetch(`/admin/trades/preview-calculation`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            symbol: symbol,
+            entry_price: entryPrice,
+            take_profit: takeProfit,
+            stop_loss: stopLoss,
+            type: type
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const leverageValue = data.leverage;
+        const riskAmount = data.risk_amount;
+        const stopLossDistance = data.stop_loss_distance;
+        const stopLossPercent = data.stop_loss_percent;
+        const quantity = data.quantity;
+        const positionValue = data.position_value;
+        const marginRequired = data.margin_required;
+        const potentialProfit = data.potential_profit;
+        const potentialLoss = data.potential_loss;
         
-        if(confirm('Execute this trade for admin account and propagate to all users?')) {
-            // Add actual trade execution logic here
-            alert('Trade executed successfully! Propagating to users...');
-        }
+        const symbolBase = symbol.replace('USDT', '');
+        
+        document.getElementById('previewContent').innerHTML = `
+            <div class="alert alert-info border-0 mb-3">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Using Admin Account:</strong> Balance: $${adminBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} | Position Size: ${positionSize}% | Leverage: ${leverageDisplay}
+            </div>
+            <div class="card border-0 bg-body-secondary">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Admin Trade Calculation</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Account Balance</span>
+                        <span class="fw-bold">$${adminBalance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Risk Amount (${positionSize}%)</span>
+                        <span class="fw-bold">$${riskAmount.toFixed(2)} USDT</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Leverage (${symbol})</span>
+                        <span class="fw-bold">${leverageDisplay === 'Max' ? leverageValue + 'x (Max for ' + symbol + ')' : leverageValue + 'x'}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Stop Loss Distance</span>
+                        <span class="fw-bold">$${stopLossDistance.toFixed(2)} (${stopLossPercent.toFixed(2)}%)</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Calculated Quantity</span>
+                        <span class="fw-bold">${quantity.toFixed(2)} ${symbolBase}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Position Value (Notional)</span>
+                        <span class="fw-bold">$${positionValue.toFixed(2)}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Margin Required</span>
+                        <span class="fw-bold">$${marginRequired.toFixed(2)}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Entry Price</span>
+                        <span class="fw-bold">$${entryPrice.toFixed(2)}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Take Profit</span>
+                        <span class="text-success fw-bold">$${takeProfit.toFixed(2)}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Stop Loss</span>
+                        <span class="text-danger fw-bold">$${stopLoss.toFixed(2)}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Potential Profit (TP)</span>
+                        <span class="text-success fw-bold">+$${potentialProfit.toFixed(2)}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Potential Loss (SL)</span>
+                        <span class="text-danger fw-bold">-$${potentialLoss.toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-warning border-0 mt-3 mb-0">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                <small><strong>Risk Explanation:</strong> With ${leverageValue}x leverage and ${stopLossPercent.toFixed(2)}% stop loss, you can open a position worth $${positionValue.toFixed(2)} (${quantity.toFixed(2)} ${symbolBase}) using $${marginRequired.toFixed(2)} margin. Max risk: $${potentialLoss.toFixed(2)} | Max profit: $${potentialProfit.toFixed(2)}</small>
+            </div>
+        `;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('previewContent').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Failed to calculate trade preview. Please check your inputs and try again.
+            </div>
+        `;
     });
+}
+
+// View trade details
+function viewTradeDetails(tradeId) {
+    fetch(`/admin/trades/${tradeId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('tradeDetailsContent').innerHTML = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-body-secondary">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3">Trade Information</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Symbol</span>
+                                    <span class="fw-bold">${data.symbol}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Type</span>
+                                    <span class="badge bg-${data.type === 'long' ? 'success' : 'danger'}">
+                                        ${data.type.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Entry Price</span>
+                                    <span class="fw-bold">$${parseFloat(data.entry_price).toLocaleString()}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Take Profit</span>
+                                    <span class="text-success fw-bold">$${parseFloat(data.take_profit).toLocaleString()}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Stop Loss</span>
+                                    <span class="text-danger fw-bold">$${parseFloat(data.stop_loss).toLocaleString()}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Quantity</span>
+                                    <span class="fw-bold">${data.quantity}</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Leverage</span>
+                                    <span class="fw-bold">${data.leverage}x</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-body-secondary">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3">Performance & Propagation</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Status</span>
+                                    <span class="badge bg-${data.status === 'open' ? 'success' : 'secondary'}">
+                                        ${data.status.toUpperCase()}
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">P&L</span>
+                                    <span class="fw-bold ${data.realized_pnl >= 0 ? 'text-success' : 'text-danger'}">
+                                        ${data.realized_pnl >= 0 ? '+' : ''}$${parseFloat(data.realized_pnl || 0).toFixed(2)}
+                                    </span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">User Propagation</span>
+                                    <span class="fw-bold">${data.user_trades_successful}/${data.user_trades_total}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Success Rate</span>
+                                    <span class="fw-bold text-success">${data.success_rate}%</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Created</span>
+                                    <span class="fw-bold">${data.created_at}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            new bootstrap.Modal(document.getElementById('tradeDetailsModal')).show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to load trade details');
+        });
+}
+
+// Enable close all button when confirmation text is typed
+document.getElementById('confirmCloseAll')?.addEventListener('input', function(e) {
+    const btn = document.getElementById('closeAllBtn');
+    btn.disabled = e.target.value !== 'CLOSE ALL';
+});
 </script>
 @endpush

@@ -35,6 +35,10 @@ class TradeExecutionService
         $quantity = $riskAmount / $stopLossDistance;
         
         $quantity = round($quantity, 3);
+        
+        // Get leverage from settings
+        $leverageSetting = \App\Models\Setting::get('signal_leverage', 'Max');
+        $leverage = $this->calculateLeverage($leverageSetting, $signal->symbol, $bybit);
 
         DB::beginTransaction();
         
@@ -50,7 +54,7 @@ class TradeExecutionService
                 'stop_loss' => $signal->stop_loss,
                 'take_profit' => $signal->take_profit,
                 'quantity' => $quantity,
-                'leverage' => 1,
+                'leverage' => $leverage,
                 'status' => 'pending',
             ]);
 
@@ -63,7 +67,8 @@ class TradeExecutionService
                 'Market',
                 null,
                 $signal->stop_loss,
-                $signal->take_profit
+                $signal->take_profit,
+                $leverage  // Pass leverage to Bybit
             );
 
             if (!$orderResult || !isset($orderResult['orderId'])) {
@@ -86,7 +91,7 @@ class TradeExecutionService
                 'entry_price' => $signal->entry_price,
                 'current_price' => $signal->entry_price,
                 'quantity' => $quantity,
-                'leverage' => 1,
+                'leverage' => $leverage,
                 'stop_loss' => $signal->stop_loss,
                 'take_profit' => $signal->take_profit,
                 'is_active' => true,
@@ -95,7 +100,7 @@ class TradeExecutionService
 
             DB::commit();
             
-            Log::info("Trade executed for user {$user->id}: {$signal->symbol} {$signal->type}", [
+            Log::info("Trade executed for user {$user->id}: {$signal->symbol} {$signal->type} with {$leverage}x leverage", [
                 'trade_id' => $trade->id,
                 'order_id' => $orderResult['orderId'],
             ]);
@@ -119,6 +124,20 @@ class TradeExecutionService
 
             throw $e;
         }
+    }
+    
+    /**
+     * Calculate leverage based on setting
+     */
+    protected function calculateLeverage($leverageSetting, $symbol, $bybit)
+    {
+        // If leverage is 'Max', fetch max from Bybit
+        if (strtolower($leverageSetting) === 'max') {
+            return $bybit->getMaxLeverage($symbol);
+        }
+        
+        // Otherwise use the numeric value
+        return (float) $leverageSetting;
     }
 
     public function closeTradeForUser(Trade $trade)

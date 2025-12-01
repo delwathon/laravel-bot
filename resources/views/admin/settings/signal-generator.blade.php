@@ -5,6 +5,37 @@
 @section('page-title', 'Signal Generator Configuration')
 
 @section('content')
+
+@php
+    // Extract all settings with proper defaults
+    $interval = $settings['signal_interval'] ?? 15;
+    $topCount = $settings['signal_top_count'] ?? 5;
+    $minConfidence = $settings['signal_min_confidence'] ?? 70;
+    $expiry = $settings['signal_expiry'] ?? 30;
+    
+    $enabledPairs = $settings['signal_pairs'] ?? ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT'];
+    
+    $primaryTimeframe = $settings['signal_primary_timeframe'] ?? '15m';
+    $higherTimeframe = $settings['signal_higher_timeframe'] ?? $settings['signal_secondary_timeframe'] ?? '1h';
+    
+    $enabledPatterns = $settings['signal_patterns'] ?? ['order_block', 'fvg', 'bos', 'choch', 'liquidity_sweep', 'premium_discount'];
+    
+    $lookbackPeriods = $settings['signal_lookback_periods'] ?? 50;
+    $patternStrength = $settings['signal_pattern_strength'] ?? 3;
+    
+    $riskReward = $settings['signal_risk_reward'] ?? '1:2';
+    $maxSl = $settings['signal_max_sl'] ?? 2;
+    $positionSize = $settings['signal_position_size'] ?? 5;
+    $leverage = $settings['signal_leverage'] ?? 'Max';
+    
+    $enabledExchanges = $settings['signal_exchanges'] ?? ['bybit'];
+    
+    $autoExecute = $settings['signal_auto_execute'] ?? true;
+    $notifyUsers = $settings['signal_notify_users'] ?? true;
+    $logAnalysis = $settings['signal_log_analysis'] ?? true;
+    $testMode = $settings['signal_test_mode'] ?? false;
+@endphp
+
 <!-- Settings Notice -->
 <div class="alert alert-warning border-0 shadow-sm mb-4">
     <div class="d-flex align-items-start">
@@ -34,17 +65,17 @@
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Signal Generation Interval</label>
                     <select class="form-select form-select-lg" name="interval">
-                        <option value="5" {{ ($settings['signal_interval'] ?? 15) == 5 ? 'selected' : '' }}>Every 5 minutes</option>
-                        <option value="15" {{ ($settings['signal_interval'] ?? 15) == 15 ? 'selected' : '' }}>Every 15 minutes</option>
-                        <option value="30" {{ ($settings['signal_interval'] ?? 15) == 30 ? 'selected' : '' }}>Every 30 minutes</option>
-                        <option value="60" {{ ($settings['signal_interval'] ?? 15) == 60 ? 'selected' : '' }}>Every 1 hour</option>
-                        <option value="240" {{ ($settings['signal_interval'] ?? 15) == 240 ? 'selected' : '' }}>Every 4 hours</option>
+                        <option value="5" {{ $interval == 5 ? 'selected' : '' }}>Every 5 minutes</option>
+                        <option value="15" {{ $interval == 15 ? 'selected' : '' }}>Every 15 minutes</option>
+                        <option value="30" {{ $interval == 30 ? 'selected' : '' }}>Every 30 minutes</option>
+                        <option value="60" {{ $interval == 60 ? 'selected' : '' }}>Every 1 hour</option>
+                        <option value="240" {{ $interval == 240 ? 'selected' : '' }}>Every 4 hours</option>
                     </select>
                     <div class="form-text">How often the SMC analysis should run</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Top Signals to Execute</label>
-                    <input type="number" class="form-control form-control-lg" name="top_signals" value="{{ $settings['signal_top_count'] ?? 5 }}" min="1" max="20">
+                    <input type="number" class="form-control form-control-lg" name="top_signals" value="{{ $topCount }}" min="1" max="20">
                     <div class="form-text">Number of highest-confidence signals to execute</div>
                 </div>
             </div>
@@ -52,12 +83,12 @@
             <div class="row g-4 mt-2">
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Minimum Confidence Threshold (%)</label>
-                    <input type="number" class="form-control form-control-lg" name="min_confidence" value="{{ $settings['signal_min_confidence'] ?? 70 }}" min="50" max="95">
+                    <input type="number" class="form-control form-control-lg" name="min_confidence" value="{{ $minConfidence }}" min="50" max="95">
                     <div class="form-text">Only signals above this confidence will be considered</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Signal Expiry Time (minutes)</label>
-                    <input type="number" class="form-control form-control-lg" name="signal_expiry" value="{{ $settings['signal_expiry'] ?? 30 }}" min="5" max="120">
+                    <input type="number" class="form-control form-control-lg" name="signal_expiry" value="{{ $expiry }}" min="5" max="120">
                     <div class="form-text">Signals expire if not executed within this time</div>
                 </div>
             </div>
@@ -74,9 +105,6 @@
         <div class="card-body p-4">
             <div class="mb-4">
                 <label class="form-label fw-semibold">Select Trading Pairs to Monitor</label>
-@php
-    $enabledPairs = $settings['signal_pairs'] ?? ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT'];
-@endphp
                 <div class="row g-3">
                     <div class="col-md-3">
                         <div class="form-check form-switch">
@@ -159,22 +187,22 @@
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Primary Timeframe</label>
                     <select class="form-select form-select-lg" name="primary_timeframe">
-                        <option value="5m">5 Minutes</option>
-                        <option value="15m" selected>15 Minutes</option>
-                        <option value="30m">30 Minutes</option>
-                        <option value="1h">1 Hour</option>
-                        <option value="4h">4 Hours</option>
+                        <option value="5m" {{ $primaryTimeframe == '5m' ? 'selected' : '' }}>5 Minutes</option>
+                        <option value="15m" {{ $primaryTimeframe == '15m' ? 'selected' : '' }}>15 Minutes</option>
+                        <option value="30m" {{ $primaryTimeframe == '30m' ? 'selected' : '' }}>30 Minutes</option>
+                        <option value="1h" {{ $primaryTimeframe == '1h' ? 'selected' : '' }}>1 Hour</option>
+                        <option value="4h" {{ $primaryTimeframe == '4h' ? 'selected' : '' }}>4 Hours</option>
                     </select>
                     <div class="form-text">Main timeframe for signal generation</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Higher Timeframe (HTF)</label>
                     <select class="form-select form-select-lg" name="higher_timeframe">
-                        <option value="15m">15 Minutes</option>
-                        <option value="30m">30 Minutes</option>
-                        <option value="1h" selected>1 Hour</option>
-                        <option value="4h">4 Hours</option>
-                        <option value="1d">1 Day</option>
+                        <option value="15m" {{ $higherTimeframe == '15m' ? 'selected' : '' }}>15 Minutes</option>
+                        <option value="30m" {{ $higherTimeframe == '30m' ? 'selected' : '' }}>30 Minutes</option>
+                        <option value="1h" {{ $higherTimeframe == '1h' ? 'selected' : '' }}>1 Hour</option>
+                        <option value="4h" {{ $higherTimeframe == '4h' ? 'selected' : '' }}>4 Hours</option>
+                        <option value="1d" {{ $higherTimeframe == '1d' ? 'selected' : '' }}>1 Day</option>
                     </select>
                     <div class="form-text">Higher timeframe for trend confirmation</div>
                 </div>
@@ -185,7 +213,7 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pattern_ob" name="patterns[]" value="order_block" checked>
+                            <input class="form-check-input" type="checkbox" id="pattern_ob" name="patterns[]" value="order_block" {{ in_array('order_block', $enabledPatterns) ? 'checked' : '' }}>
                             <label class="form-check-label" for="pattern_ob">
                                 Order Blocks
                             </label>
@@ -193,7 +221,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pattern_fvg" name="patterns[]" value="fvg" checked>
+                            <input class="form-check-input" type="checkbox" id="pattern_fvg" name="patterns[]" value="fvg" {{ in_array('fvg', $enabledPatterns) ? 'checked' : '' }}>
                             <label class="form-check-label" for="pattern_fvg">
                                 Fair Value Gaps
                             </label>
@@ -201,7 +229,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pattern_bos" name="patterns[]" value="bos" checked>
+                            <input class="form-check-input" type="checkbox" id="pattern_bos" name="patterns[]" value="bos" {{ in_array('bos', $enabledPatterns) ? 'checked' : '' }}>
                             <label class="form-check-label" for="pattern_bos">
                                 Break of Structure
                             </label>
@@ -209,7 +237,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pattern_choch" name="patterns[]" value="choch" checked>
+                            <input class="form-check-input" type="checkbox" id="pattern_choch" name="patterns[]" value="choch" {{ in_array('choch', $enabledPatterns) ? 'checked' : '' }}>
                             <label class="form-check-label" for="pattern_choch">
                                 Change of Character
                             </label>
@@ -217,7 +245,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pattern_liq" name="patterns[]" value="liquidity_sweep" checked>
+                            <input class="form-check-input" type="checkbox" id="pattern_liq" name="patterns[]" value="liquidity_sweep" {{ in_array('liquidity_sweep', $enabledPatterns) ? 'checked' : '' }}>
                             <label class="form-check-label" for="pattern_liq">
                                 Liquidity Sweeps
                             </label>
@@ -225,7 +253,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pattern_premium" name="patterns[]" value="premium_discount" checked>
+                            <input class="form-check-input" type="checkbox" id="pattern_premium" name="patterns[]" value="premium_discount" {{ in_array('premium_discount', $enabledPatterns) ? 'checked' : '' }}>
                             <label class="form-check-label" for="pattern_premium">
                                 Premium/Discount Zones
                             </label>
@@ -237,12 +265,12 @@
             <div class="row g-4 mt-3">
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Order Block Lookback Period</label>
-                    <input type="number" class="form-control form-control-lg" name="ob_lookback" value="50" min="10" max="200">
+                    <input type="number" class="form-control form-control-lg" name="lookback_periods" value="{{ $lookbackPeriods }}" min="10" max="200">
                     <div class="form-text">Number of candles to analyze for order blocks</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Minimum Pattern Strength</label>
-                    <input type="number" class="form-control form-control-lg" name="pattern_strength" value="3" min="1" max="5">
+                    <input type="number" class="form-control form-control-lg" name="pattern_strength" value="{{ $patternStrength }}" min="1" max="5">
                     <div class="form-text">Pattern strength threshold (1-5, higher = stronger)</div>
                 </div>
             </div>
@@ -260,22 +288,22 @@
             <div class="row g-4">
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Default Risk/Reward Ratio</label>
-                    <input type="text" class="form-control form-control-lg" name="risk_reward" value="1:2" placeholder="1:2">
+                    <input type="text" class="form-control form-control-lg" name="risk_reward" value="{{ $riskReward }}" placeholder="1:2">
                     <div class="form-text">Minimum R:R for signal execution</div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Max Stop Loss (%)</label>
-                    <input type="number" class="form-control form-control-lg" name="max_sl" value="2" min="0.5" max="10" step="0.1">
+                    <input type="number" class="form-control form-control-lg" name="max_sl" value="{{ $maxSl }}" min="0.5" max="10" step="0.1">
                     <div class="form-text">Maximum stop loss percentage</div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Position Size (% of Balance)</label>
-                    <input type="number" class="form-control form-control-lg" name="position_size" value="5" min="1" max="10">
+                    <input type="number" class="form-control form-control-lg" name="position_size" value="{{ $positionSize }}" min="1" max="10">
                     <div class="form-text">Default position size per trade</div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Leverage</label>
-                    <input type="text" class="form-control form-control-lg" name="leverage" value="Max">
+                    <input type="text" class="form-control form-control-lg" name="leverage" value="{{ $leverage }}">
                     <div class="form-text">Default leverage size per trade</div>
                 </div>
             </div>
@@ -293,7 +321,7 @@
             <div class="row g-3">
                 <div class="col-md-6">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="exchange_bybit" name="exchanges[]" value="bybit" checked>
+                        <input class="form-check-input" type="checkbox" id="exchange_bybit" name="exchanges[]" value="bybit" {{ in_array('bybit', $enabledExchanges) ? 'checked' : '' }}>
                         <label class="form-check-label fw-semibold" for="exchange_bybit">
                             <i class="bi bi-coin text-primary me-2"></i>Enable Bybit
                         </label>
@@ -315,7 +343,7 @@
             <div class="row g-3">
                 <div class="col-md-6">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="auto_execute" name="auto_execute" checked>
+                        <input class="form-check-input" type="checkbox" id="auto_execute" name="auto_execute" {{ $autoExecute ? 'checked' : '' }}>
                         <label class="form-check-label fw-semibold" for="auto_execute">
                             Auto-execute signals
                         </label>
@@ -324,7 +352,7 @@
                 </div>
                 <div class="col-md-6">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="notify_users" name="notify_users" checked>
+                        <input class="form-check-input" type="checkbox" id="notify_users" name="notify_users" {{ $notifyUsers ? 'checked' : '' }}>
                         <label class="form-check-label fw-semibold" for="notify_users">
                             Notify users
                         </label>
@@ -333,7 +361,7 @@
                 </div>
                 <div class="col-md-6">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="log_analysis" name="log_analysis" checked>
+                        <input class="form-check-input" type="checkbox" id="log_analysis" name="log_analysis" {{ $logAnalysis ? 'checked' : '' }}>
                         <label class="form-check-label fw-semibold" for="log_analysis">
                             Log detailed analysis
                         </label>
@@ -342,7 +370,7 @@
                 </div>
                 <div class="col-md-6">
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="test_mode" name="test_mode">
+                        <input class="form-check-input" type="checkbox" id="test_mode" name="test_mode" {{ $testMode ? 'checked' : '' }}>
                         <label class="form-check-label fw-semibold" for="test_mode">
                             Test mode
                         </label>

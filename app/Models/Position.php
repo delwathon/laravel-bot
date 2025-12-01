@@ -12,7 +12,7 @@ class Position extends Model
     protected $fillable = [
         'user_id',
         'trade_id',
-        'exchange_account_id',
+        // 'exchange_account_id',
         'symbol',
         'exchange',
         'side',

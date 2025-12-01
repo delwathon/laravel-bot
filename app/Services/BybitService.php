@@ -19,7 +19,7 @@ class BybitService
         $this->testnet = $testnet;
         $this->baseUrl = $testnet 
             ? 'https://api-testnet.bybit.com' 
-            : 'https://api.bybit.com';
+            : 'https://api-demo.bybit.com';
     }
 
     public function testConnection()
@@ -76,9 +76,14 @@ class BybitService
         }
     }
 
-    public function placeOrder($symbol, $side, $qty, $orderType = 'Market', $price = null, $stopLoss = null, $takeProfit = null)
+    public function placeOrder($symbol, $side, $qty, $orderType = 'Market', $price = null, $stopLoss = null, $takeProfit = null, $leverage = null)
     {
         try {
+            // Set leverage BEFORE placing order if specified
+            if ($leverage !== null) {
+                $this->setLeverage($symbol, $leverage);
+            }
+            
             $timestamp = round(microtime(true) * 1000);
             $params = [
                 'category' => 'linear',
@@ -107,6 +112,72 @@ class BybitService
         } catch (\Exception $e) {
             Log::error('Failed to place Bybit order: ' . $e->getMessage());
             throw $e;
+        }
+    }
+    
+    public function setLeverage($symbol, $leverage)
+    {
+        try {
+            // If leverage is 'Max', get the maximum available leverage for the symbol
+            if (strtolower($leverage) === 'max') {
+                $leverage = $this->getMaxLeverage($symbol);
+            }
+            
+            $timestamp = round(microtime(true) * 1000);
+            $params = [
+                'category' => 'linear',
+                'symbol' => $symbol,
+                'buyLeverage' => (string) $leverage,
+                'sellLeverage' => (string) $leverage,
+            ];
+            
+            try {
+                $response = $this->signedRequest('POST', '/v5/position/set-leverage', $params, $timestamp);
+                Log::info("Leverage set for {$symbol}: {$leverage}x");
+                return $response['result'] ?? null;
+            } catch (\Exception $e) {
+                // If leverage is already set to this value, don't treat it as an error
+                if (strpos($e->getMessage(), 'leverage not modified') !== false) {
+                    Log::info("Leverage already set for {$symbol}: {$leverage}x (not modified)");
+                    return null; // Not an error, just already set
+                }
+                // Re-throw other errors
+                throw $e;
+            }
+        } catch (\Exception $e) {
+            // Only log and throw if it's NOT a "leverage not modified" error
+            if (strpos($e->getMessage(), 'leverage not modified') === false) {
+                Log::error("Failed to set leverage for {$symbol}: " . $e->getMessage());
+                throw $e;
+            }
+            // If it's "leverage not modified", just return null (success)
+            return null;
+        }
+    }
+    
+    public function getMaxLeverage($symbol)
+    {
+        try {
+            $timestamp = round(microtime(true) * 1000);
+            $params = [
+                'category' => 'linear',
+                'symbol' => $symbol,
+            ];
+            
+            $response = $this->signedRequest('GET', '/v5/market/instruments-info', $params, $timestamp);
+            
+            if (isset($response['result']['list'][0]['leverageFilter']['maxLeverage'])) {
+                $maxLeverage = (float) $response['result']['list'][0]['leverageFilter']['maxLeverage'];
+                Log::info("Max leverage for {$symbol}: {$maxLeverage}x");
+                return $maxLeverage;
+            }
+            
+            // Default to 10x if unable to fetch
+            Log::warning("Could not fetch max leverage for {$symbol}, defaulting to 10x");
+            return 10;
+        } catch (\Exception $e) {
+            Log::error("Failed to get max leverage for {$symbol}: " . $e->getMessage());
+            return 10; // Safe default
         }
     }
 
@@ -149,13 +220,48 @@ class BybitService
             $position = $positions[0];
             $qty = abs((float) $position['size']);
             
+            // Get unrealized P&L before closing
+            $unrealizedPnl = (float) ($position['unrealisedPnl'] ?? 0);
+            
             // Reverse side to close position
             $closeSide = $side === 'Buy' ? 'Sell' : 'Buy';
             
-            return $this->placeOrder($symbol, $closeSide, $qty, 'Market');
+            $closeResult = $this->placeOrder($symbol, $closeSide, $qty, 'Market');
+            
+            // Return close info including P&L
+            return [
+                'orderId' => $closeResult['orderId'] ?? null,
+                'closedPnl' => $unrealizedPnl, // This becomes realized after close
+                'closedQty' => $qty,
+            ];
         } catch (\Exception $e) {
             Log::error('Failed to close Bybit position: ' . $e->getMessage());
             throw $e;
+        }
+    }
+    
+    public function getClosedPnL($symbol)
+    {
+        try {
+            $timestamp = round(microtime(true) * 1000);
+            $params = [
+                'category' => 'linear',
+                'symbol' => $symbol,
+                'limit' => 1, // Get most recent closed position
+            ];
+            
+            $response = $this->signedRequest('GET', '/v5/position/closed-pnl', $params, $timestamp);
+            
+            $closedPositions = $response['result']['list'] ?? [];
+            
+            if (!empty($closedPositions)) {
+                return (float) ($closedPositions[0]['closedPnl'] ?? 0);
+            }
+            
+            return 0;
+        } catch (\Exception $e) {
+            Log::error('Failed to get closed P&L: ' . $e->getMessage());
+            return 0; // Return 0 instead of throwing to not break the flow
         }
     }
 
@@ -283,8 +389,26 @@ class BybitService
         
         $data = $response->json();
         
+        // Check for Bybit API errors
         if (isset($data['retCode']) && $data['retCode'] != 0) {
-            throw new \Exception('Bybit API error: ' . ($data['retMsg'] ?? 'Unknown error'));
+            $errorMsg = $data['retMsg'] ?? 'Unknown error';
+            $errorCode = $data['retCode'];
+            
+            // Don't throw exception for non-critical errors
+            $nonCriticalErrors = [
+                'leverage not modified',
+                'position idx not match position mode',
+            ];
+            
+            foreach ($nonCriticalErrors as $nonCritical) {
+                if (stripos($errorMsg, $nonCritical) !== false) {
+                    Log::warning("Bybit API warning (code {$errorCode}): {$errorMsg}");
+                    return $data; // Return data instead of throwing
+                }
+            }
+            
+            // Throw exception for actual errors
+            throw new \Exception("Bybit API error (code {$errorCode}): {$errorMsg}");
         }
         
         return $data;

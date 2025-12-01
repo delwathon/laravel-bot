@@ -24,17 +24,17 @@
                         <div class="d-flex gap-3 mb-3">
                             <div>
                                 <div class="text-white text-opacity-75 small">Next Run</div>
-                                <div class="fw-bold fs-5">in 12 minutes</div>
+                                <div class="fw-bold fs-5" id="nextRunTime">Calculating...</div>
                             </div>
                             <div class="vr"></div>
                             <div>
                                 <div class="text-white text-opacity-75 small">Interval</div>
-                                <div class="fw-bold fs-5">Every 15 min</div>
+                                <div class="fw-bold fs-5">Every {{ $signalInterval }} min</div>
                             </div>
                             <div class="vr"></div>
                             <div>
                                 <div class="text-white text-opacity-75 small">Top Signals</div>
-                                <div class="fw-bold fs-5">5 pairs</div>
+                                <div class="fw-bold fs-5">{{ $topSignalsCount }} pairs</div>
                             </div>
                         </div>
                         <button class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#generateSignalModal">
@@ -69,25 +69,25 @@
                 <div class="mb-3">
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted small">Generated</span>
-                        <span class="fw-bold">96 signals</span>
+                        <span class="fw-bold">{{ $stats['total_signals_today'] }} signals</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted small">Executed</span>
-                        <span class="fw-bold text-success">87 trades</span>
+                        <span class="fw-bold text-success">{{ $stats['executed_signals'] }} trades</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted small">Win Rate</span>
-                        <span class="fw-bold text-success">68.4%</span>
+                        <span class="fw-bold text-success">{{ number_format($stats['success_rate'], 1) }}%</span>
                     </div>
                     <div class="d-flex justify-content-between">
                         <span class="text-muted small">Avg Confidence</span>
-                        <span class="fw-bold">82.3%</span>
+                        <span class="fw-bold">{{ number_format($stats['avg_confidence'], 1) }}%</span>
                     </div>
                 </div>
                 <div class="progress mb-2" style="height: 8px;">
-                    <div class="progress-bar bg-success" style="width: 68.4%"></div>
+                    <div class="progress-bar bg-success" style="width: {{ $stats['success_rate'] }}%"></div>
                 </div>
-                <small class="text-muted">Positive P&L: +$45,231</small>
+                <small class="text-muted">Active Signals: {{ $stats['pending_signals'] }}</small>
             </div>
         </div>
     </div>
@@ -96,39 +96,42 @@
 <!-- Filters -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-4">
-        <div class="row g-3">
-            <div class="col-lg-3">
-                <select class="form-select" id="filterDirection">
-                    <option value="">All Directions</option>
-                    <option value="long">Long</option>
-                    <option value="short">Short</option>
-                </select>
+        <form id="filterForm" method="GET" action="{{ route('admin.signals.index') }}">
+            <div class="row g-3">
+                <div class="col-lg-3">
+                    <select class="form-select" name="direction" id="filterDirection" onchange="document.getElementById('filterForm').submit()">
+                        <option value="">All Directions</option>
+                        <option value="long" {{ request('direction') == 'long' ? 'selected' : '' }}>Long</option>
+                        <option value="short" {{ request('direction') == 'short' ? 'selected' : '' }}>Short</option>
+                    </select>
+                </div>
+                <div class="col-lg-3">
+                    <select class="form-select" name="confidence" id="filterConfidence" onchange="document.getElementById('filterForm').submit()">
+                        <option value="">All Confidence</option>
+                        <option value="high" {{ request('confidence') == 'high' ? 'selected' : '' }}>High (&gt;80%)</option>
+                        <option value="medium" {{ request('confidence') == 'medium' ? 'selected' : '' }}>Medium (60-80%)</option>
+                        <option value="low" {{ request('confidence') == 'low' ? 'selected' : '' }}>Low (&lt;60%)</option>
+                    </select>
+                </div>
+                <div class="col-lg-3">
+                    <select class="form-select" name="status" id="filterStatus" onchange="document.getElementById('filterForm').submit()">
+                        <option value="">All Status</option>
+                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                        <option value="executed" {{ request('status') == 'executed' ? 'selected' : '' }}>Executed</option>
+                        <option value="expired" {{ request('status') == 'expired' ? 'selected' : '' }}>Expired</option>
+                    </select>
+                </div>
+                <div class="col-lg-3">
+                    <select class="form-select" name="timeframe" id="filterTimeframe" onchange="document.getElementById('filterForm').submit()">
+                        <option value="today" {{ request('timeframe', 'today') == 'today' ? 'selected' : '' }}>Today</option>
+                        <option value="24h" {{ request('timeframe') == '24h' ? 'selected' : '' }}>Last 24 Hours</option>
+                        <option value="7d" {{ request('timeframe') == '7d' ? 'selected' : '' }}>Last 7 Days</option>
+                        <option value="30d" {{ request('timeframe') == '30d' ? 'selected' : '' }}>Last 30 Days</option>
+                    </select>
+                </div>
             </div>
-            <div class="col-lg-3">
-                <select class="form-select" id="filterConfidence">
-                    <option value="">All Confidence</option>
-                    <option value="high">High (&gt;80%)</option>
-                    <option value="medium">Medium (60-80%)</option>
-                    <option value="low">Low (&lt;60%)</option>
-                </select>
-            </div>
-            <div class="col-lg-3">
-                <select class="form-select" id="filterStatus">
-                    <option value="">All Status</option>
-                    <option value="pending">Pending</option>
-                    <option value="executed">Executed</option>
-                    <option value="expired">Expired</option>
-                </select>
-            </div>
-            <div class="col-lg-3">
-                <select class="form-select" id="filterTimeframe">
-                    <option value="today">Today</option>
-                    <option value="24h">Last 24 Hours</option>
-                    <option value="7d">Last 7 Days</option>
-                    <option value="30d">Last 30 Days</option>
-                </select>
-            </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -141,344 +144,159 @@
                 <p class="text-muted small mb-0">Real-time SMC analysis results and trade signals</p>
             </div>
             <div class="btn-group">
-                <button class="btn btn-outline-secondary">
+                <button class="btn btn-outline-secondary" onclick="refreshSignals()">
                     <i class="bi bi-arrow-clockwise"></i> Refresh
                 </button>
-                <button class="btn btn-outline-secondary">
+                <a href="{{ route('admin.signals.index', array_merge(request()->all(), ['export' => 'csv'])) }}" class="btn btn-outline-secondary">
                     <i class="bi bi-download"></i> Export
-                </button>
+                </a>
             </div>
         </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" id="signalsTable">
                 <thead class="bg-body-secondary">
                     <tr>
                         <th class="border-0 px-4 py-3 fw-semibold">Time</th>
                         <th class="border-0 py-3 fw-semibold">Pair</th>
                         <th class="border-0 py-3 fw-semibold">Direction</th>
-                        <th class="border-0 py-3 fw-semibold">Entry Price</th>
+                        <th class="border-0 py-3 fw-semibold">Pattern</th>
+                        <th class="border-0 py-3 fw-semibold">Entry</th>
+                        <th class="border-0 py-3 fw-semibold">TP / SL</th>
                         <th class="border-0 py-3 fw-semibold">Confidence</th>
-                        <th class="border-0 py-3 fw-semibold">SMC Pattern</th>
+                        <th class="border-0 py-3 fw-semibold">R:R</th>
                         <th class="border-0 py-3 fw-semibold">Status</th>
-                        <th class="border-0 py-3 fw-semibold text-end">Actions</th>
+                        <th class="border-0 px-4 py-3 fw-semibold text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Signal Row 1 - High Confidence -->
+                    @forelse($recentSignals as $signal)
                     <tr>
                         <td class="px-4">
-                            <div class="small fw-semibold">14:23:15</div>
-                            <small class="text-secondary">2 min ago</small>
+                            <div class="small fw-semibold">{{ $signal->created_at->format('H:i:s') }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">{{ $signal->created_at->format('M d') }}</div>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
-                                <div class="bg-warning bg-opacity-10 p-2 rounded-circle me-2">
-                                    <i class="bi bi-currency-bitcoin text-warning"></i>
+                                <div class="me-2">
+                                    @php
+                                        $symbolColor = match(true) {
+                                            str_contains($signal->symbol, 'BTC') => 'text-warning',
+                                            str_contains($signal->symbol, 'ETH') => 'text-info',
+                                            str_contains($signal->symbol, 'SOL') => 'text-purple',
+                                            default => 'text-secondary'
+                                        };
+                                    @endphp
+                                    <i class="bi bi-coin {{ $symbolColor }}"></i>
                                 </div>
                                 <div>
-                                    <div class="fw-bold">BTCUSDT</div>
+                                    <div class="fw-semibold">{{ $signal->symbol }}</div>
+                                    <div class="text-muted small">{{ $signal->timeframe }}</div>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                <i class="bi bi-arrow-up-right me-1"></i>LONG
+                            <span class="badge {{ $signal->type === 'long' ? 'bg-success' : 'bg-danger' }} bg-opacity-10 {{ $signal->type === 'long' ? 'text-success' : 'text-danger' }} border border-{{ $signal->type === 'long' ? 'success' : 'danger' }} border-opacity-25">
+                                {{ strtoupper($signal->type) }}
                             </span>
                         </td>
                         <td>
-                            <div class="fw-semibold">$66,450</div>
-                            <small class="text-secondary">TP: $67,200</small>
+                            <div class="small">{{ $signal->pattern }}</div>
                         </td>
                         <td>
-                            <div class="d-flex align-items-center">
-                                <div class="progress flex-grow-1 me-2" style="height: 6px; width: 60px;">
-                                    <div class="progress-bar bg-success" style="width: 87%"></div>
-                                </div>
-                                <span class="badge bg-success bg-opacity-10 text-success">87%</span>
-                            </div>
+                            <div class="fw-semibold">${{ number_format($signal->entry_price, 2) }}</div>
                         </td>
                         <td>
                             <div class="small">
-                                <div class="badge bg-info bg-opacity-10 text-info mb-1">Order Block</div>
-                                <div class="badge bg-warning bg-opacity-10 text-warning">FVG</div>
+                                <span class="text-success">${{ number_format($signal->take_profit, 2) }}</span>
+                                <span class="text-muted">/</span>
+                                <span class="text-danger">${{ number_format($signal->stop_loss, 2) }}</span>
                             </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
-                                <i class="bi bi-clock"></i> Pending
-                            </span>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#signalDetailsModal">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button class="btn btn-outline-success" title="Execute Now">
-                                    <i class="bi bi-play-circle"></i>
-                                </button>
-                                <button class="btn btn-outline-danger" title="Dismiss">
-                                    <i class="bi bi-x-circle"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- Signal Row 2 - Executed -->
-                    <tr class="table-success bg-opacity-10">
-                        <td class="px-4">
-                            <div class="small fw-semibold">14:08:42</div>
-                            <small class="text-secondary">17 min ago</small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
-                                <div class="bg-info bg-opacity-10 p-2 rounded-circle me-2">
-                                    <i class="bi bi-currency-exchange text-info"></i>
+                                <div class="progress me-2" style="width: 60px; height: 6px;">
+                                    <div class="progress-bar {{ $signal->confidence >= 80 ? 'bg-success' : ($signal->confidence >= 60 ? 'bg-warning' : 'bg-danger') }}" 
+                                         style="width: {{ $signal->confidence }}%"></div>
                                 </div>
-                                <div>
-                                    <div class="fw-bold">ETHUSDT</div>
-                                </div>
+                                <span class="small fw-semibold">{{ number_format($signal->confidence, 0) }}%</span>
                             </div>
                         </td>
                         <td>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                <i class="bi bi-arrow-up-right me-1"></i>LONG
+                            <span class="fw-semibold">1:{{ number_format($signal->risk_reward_ratio, 1) }}</span>
+                        </td>
+                        <td>
+                            @php
+                                $statusConfig = match($signal->status) {
+                                    'active' => ['color' => 'primary', 'icon' => 'circle-fill', 'text' => 'Active'],
+                                    'pending' => ['color' => 'warning', 'icon' => 'clock-fill', 'text' => 'Pending'],
+                                    'executed' => ['color' => 'success', 'icon' => 'check-circle-fill', 'text' => 'Executed'],
+                                    'expired' => ['color' => 'secondary', 'icon' => 'x-circle-fill', 'text' => 'Expired'],
+                                    default => ['color' => 'secondary', 'icon' => 'circle', 'text' => $signal->status]
+                                };
+                            @endphp
+                            <span class="badge bg-{{ $statusConfig['color'] }} bg-opacity-10 text-{{ $statusConfig['color'] }} border border-{{ $statusConfig['color'] }} border-opacity-25">
+                                <i class="bi bi-{{ $statusConfig['icon'] }}" style="font-size: 6px;"></i> {{ $statusConfig['text'] }}
                             </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$3,245</div>
-                            <small class="text-secondary">TP: $3,310</small>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="progress flex-grow-1 me-2" style="height: 6px; width: 60px;">
-                                    <div class="progress-bar bg-success" style="width: 82%"></div>
+                            @if($signal->expires_at && $signal->status === 'active')
+                                <div class="text-muted small mt-1">
+                                    Expires {{ $signal->expires_at->diffForHumans() }}
                                 </div>
-                                <span class="badge bg-success bg-opacity-10 text-success">82%</span>
-                            </div>
+                            @endif
                         </td>
-                        <td>
-                            <div class="small">
-                                <div class="badge bg-info bg-opacity-10 text-info mb-1">Break of Structure</div>
-                                <div class="badge bg-success bg-opacity-10 text-success">Liquidity Sweep</div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                <i class="bi bi-check-circle"></i> Executed
-                                <div class="small">248 users</div>
-                            </span>
-                        </td>
-                        <td class="text-end">
+                        <td class="px-4 text-end">
                             <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#signalDetailsModal">
+                                <button class="btn btn-outline-primary" onclick="viewSignalDetails({{ $signal->id }})" title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </button>
-                                <button class="btn btn-outline-info" title="View Trades">
-                                    <i class="bi bi-list-ul"></i>
-                                </button>
+                                @if($signal->status === 'active')
+                                    <form action="{{ route('admin.signals.execute', $signal) }}" method="POST" class="d-inline" onsubmit="return confirm('Execute this signal for all users?')">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-success" title="Execute for All Users">
+                                            <i class="bi bi-play-circle-fill"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                                @if(in_array($signal->status, ['pending', 'active']))
+                                    <form action="{{ route('admin.signals.cancel', $signal) }}" method="POST" class="d-inline" onsubmit="return confirm('Cancel this signal?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger" title="Cancel Signal">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
-
-                    <!-- Signal Row 3 - Short Position -->
+                    @empty
                     <tr>
-                        <td class="px-4">
-                            <div class="small fw-semibold">13:53:20</div>
-                            <small class="text-secondary">32 min ago</small>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-purple bg-opacity-10 p-2 rounded-circle me-2" style="background-color: rgba(139, 92, 246, 0.1) !important;">
-                                    <i class="bi bi-coin" style="color: #8b5cf6;"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold">SOLUSDT</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
-                                <i class="bi bi-arrow-down-right me-1"></i>SHORT
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$145.80</div>
-                            <small class="text-secondary">TP: $142.50</small>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="progress flex-grow-1 me-2" style="height: 6px; width: 60px;">
-                                    <div class="progress-bar bg-warning" style="width: 75%"></div>
-                                </div>
-                                <span class="badge bg-warning bg-opacity-10 text-warning">75%</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="small">
-                                <div class="badge bg-danger bg-opacity-10 text-danger mb-1">CHoCH</div>
-                                <div class="badge bg-info bg-opacity-10 text-info">Order Block</div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
-                                <i class="bi bi-clock"></i> Pending
-                            </span>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#signalDetailsModal">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button class="btn btn-outline-success">
-                                    <i class="bi bi-play-circle"></i>
-                                </button>
-                                <button class="btn btn-outline-danger">
-                                    <i class="bi bi-x-circle"></i>
-                                </button>
-                            </div>
+                        <td colspan="10" class="text-center py-5">
+                            <i class="bi bi-inbox fs-1 text-muted d-block mb-3"></i>
+                            <p class="text-muted">No signals found for the selected filters.</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#generateSignalModal">
+                                <i class="bi bi-lightning-charge-fill me-2"></i>Generate Signals
+                            </button>
                         </td>
                     </tr>
-
-                    <!-- Signal Row 4 - Medium Confidence -->
-                    <tr>
-                        <td class="px-4">
-                            <div class="small fw-semibold">13:38:05</div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-success bg-opacity-10 p-2 rounded-circle me-2">
-                                    <i class="bi bi-currency-dollar text-success"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold">XRPUSDT</div>
-                                    <small class="text-secondary">Ripple</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                <i class="bi bi-arrow-up-right me-1"></i>LONG
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$0.5234</div>
-                            <small class="text-secondary">TP: $0.5450</small>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="progress flex-grow-1 me-2" style="height: 6px; width: 60px;">
-                                    <div class="progress-bar bg-warning" style="width: 68%"></div>
-                                </div>
-                                <span class="badge bg-warning bg-opacity-10 text-warning">68%</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="small">
-                                <div class="badge bg-warning bg-opacity-10 text-warning">FVG</div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">
-                                <i class="bi bi-x-circle"></i> Expired
-                            </span>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#signalDetailsModal">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button class="btn btn-outline-secondary" disabled>
-                                    <i class="bi bi-archive"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
-                    <!-- Signal Row 5 - Executed -->
-                    <tr class="table-success bg-opacity-10">
-                        <td class="px-4">
-                            <div class="small fw-semibold">13:23:18</div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="bg-danger bg-opacity-10 p-2 rounded-circle me-2">
-                                    <i class="bi bi-coin text-danger"></i>
-                                </div>
-                                <div>
-                                    <div class="fw-bold">AVAXUSDT</div>
-                                    <small class="text-secondary">Avalanche</small>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
-                                <i class="bi bi-arrow-down-right me-1"></i>SHORT
-                            </span>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">$28.45</div>
-                            <small class="text-secondary">TP: $27.80</small>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="progress flex-grow-1 me-2" style="height: 6px; width: 60px;">
-                                    <div class="progress-bar bg-success" style="width: 91%"></div>
-                                </div>
-                                <span class="badge bg-success bg-opacity-10 text-success">91%</span>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="small">
-                                <div class="badge bg-danger bg-opacity-10 text-danger mb-1">Bearish OB</div>
-                                <div class="badge bg-info bg-opacity-10 text-info">Premium Zone</div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
-                                <i class="bi bi-check-circle"></i> Executed
-                                <div class="small">231 users</div>
-                            </span>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#signalDetailsModal">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button class="btn btn-outline-info">
-                                    <i class="bi bi-list-ul"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-
+                    @endforelse
                 </tbody>
             </table>
         </div>
     </div>
 
     <!-- Pagination -->
+    @if($recentSignals->hasPages())
     <div class="card-footer bg-transparent border-0 p-4">
         <div class="d-flex justify-content-between align-items-center">
             <div class="text-muted small">
-                Showing 1 to 5 of 96 signals today
+                Showing {{ $recentSignals->firstItem() }} to {{ $recentSignals->lastItem() }} of {{ $recentSignals->total() }} signals
             </div>
-            <nav>
-                <ul class="pagination pagination-sm mb-0">
-                    <li class="page-item disabled">
-                        <span class="page-link"><i class="bi bi-chevron-left"></i></span>
-                    </li>
-                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link" href="#">3</a></li>
-                    <li class="page-item">
-                        <a class="page-link" href="#"><i class="bi bi-chevron-right"></i></a>
-                    </li>
-                </ul>
-            </nav>
+            {{ $recentSignals->links() }}
         </div>
     </div>
+    @endif
 </div>
 
 <!-- Generate Signal Modal -->
@@ -491,24 +309,27 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p class="mb-3">Start the SMC analysis engine to generate new trading signals.</p>
-                <div class="alert alert-info border-0 mb-3">
-                    <strong>What happens next:</strong>
-                    <ul class="mb-0 mt-2 small">
-                        <li>Market data will be fetched from all exchanges</li>
-                        <li>SMC patterns will be analyzed in real-time</li>
-                        <li>Top signals will be ranked by confidence</li>
-                        <li>Signals will be ready for execution in 30-60 seconds</li>
-                    </ul>
+            <form action="{{ route('admin.signals.generate') }}" method="POST" id="generateSignalForm">
+                @csrf
+                <div class="modal-body">
+                    <p class="mb-3">Start the SMC analysis engine to generate new trading signals.</p>
+                    <div class="alert alert-info border-0 mb-3">
+                        <strong>What happens next:</strong>
+                        <ul class="mb-0 mt-2 small">
+                            <li>Market data will be fetched from Bybit</li>
+                            <li>SMC patterns will be analyzed in real-time</li>
+                            <li>Top signals will be ranked by confidence</li>
+                            <li>Signals will be ready for execution in 30-60 seconds</li>
+                        </ul>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="startSignalGeneration()">
-                    <i class="bi bi-play-circle-fill me-2"></i>Start Analysis
-                </button>
-            </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="startGenerationBtn">
+                        <i class="bi bi-play-circle-fill me-2"></i>Start Analysis
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -523,7 +344,87 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" id="signalDetailsContent">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0" id="signalDetailsFooter">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@push('scripts')
+<script>
+// Calculate next run time
+function updateNextRunTime() {
+    const intervalMinutes = {{ $signalInterval }};
+    const now = new Date();
+    const minutes = now.getMinutes();
+    const nextRun = intervalMinutes - (minutes % intervalMinutes);
+    
+    document.getElementById('nextRunTime').textContent = `in ${nextRun} minute${nextRun > 1 ? 's' : ''}`;
+}
+
+// Update immediately and every minute
+updateNextRunTime();
+setInterval(updateNextRunTime, 60000);
+
+// Handle signal generation form submission
+document.getElementById('generateSignalForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const btn = document.getElementById('startGenerationBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+    
+    fetch(this.action, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('generateSignalModal'));
+        modal.hide();
+        
+        if (data.success) {
+            showToast('success', data.message || 'Signals generated successfully!');
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showToast('error', data.message || 'Signal generation failed');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-play-circle-fill me-2"></i>Start Analysis';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'An error occurred during signal generation');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-play-circle-fill me-2"></i>Start Analysis';
+    });
+});
+
+// View signal details
+function viewSignalDetails(signalId) {
+    const modal = new bootstrap.Modal(document.getElementById('signalDetailsModal'));
+    modal.show();
+    
+    fetch(`/admin/signals/${signalId}`)
+        .then(response => response.json())
+        .then(data => {
+            const signal = data.signal;
+            
+            const content = `
                 <div class="row g-4">
                     <div class="col-md-6">
                         <div class="card border-0 bg-body-secondary">
@@ -531,23 +432,23 @@
                                 <h6 class="fw-bold mb-3">Trade Information</h6>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Pair</span>
-                                    <span class="fw-bold">BTCUSDT</span>
+                                    <span class="fw-bold">${signal.symbol}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Direction</span>
-                                    <span class="badge bg-success">LONG</span>
+                                    <span class="badge bg-${signal.type === 'long' ? 'success' : 'danger'}">${signal.type.toUpperCase()}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Entry Price</span>
-                                    <span class="fw-bold">$66,450.00</span>
+                                    <span class="fw-bold">$${parseFloat(signal.entry_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Take Profit</span>
-                                    <span class="text-success fw-bold">$67,200.00</span>
+                                    <span class="text-success fw-bold">$${parseFloat(signal.take_profit).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                 </div>
                                 <div class="d-flex justify-content-between">
                                     <span class="text-muted">Stop Loss</span>
-                                    <span class="text-danger fw-bold">$65,900.00</span>
+                                    <span class="text-danger fw-bold">$${parseFloat(signal.stop_loss).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                                 </div>
                             </div>
                         </div>
@@ -558,83 +459,109 @@
                                 <h6 class="fw-bold mb-3">Analysis Details</h6>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Confidence</span>
-                                    <span class="badge bg-success">87%</span>
+                                    <span class="badge bg-success">${Math.round(signal.confidence)}%</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Risk/Reward</span>
-                                    <span class="fw-bold">1:3.2</span>
+                                    <span class="fw-bold">1:${parseFloat(signal.risk_reward_ratio).toFixed(1)}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Timeframe</span>
-                                    <span class="fw-bold">15M</span>
+                                    <span class="fw-bold">${signal.timeframe}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Generated</span>
-                                    <span class="fw-bold">14:23:15</span>
+                                    <span class="fw-bold">${new Date(signal.created_at).toLocaleTimeString()}</span>
                                 </div>
                                 <div class="d-flex justify-content-between">
-                                    <span class="text-muted">Expires</span>
-                                    <span class="text-warning fw-bold">in 12 min</span>
+                                    <span class="text-muted">Status</span>
+                                    <span class="badge bg-primary">${signal.status}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="mt-4">
-                    <h6 class="fw-bold mb-3">SMC Patterns Detected</h6>
-                    <div class="d-flex flex-wrap gap-2">
-                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2">
-                            <i class="bi bi-graph-up me-1"></i>Order Block (Bullish)
-                        </span>
-                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2">
-                            <i class="bi bi-gap me-1"></i>Fair Value Gap
-                        </span>
-                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2">
-                            <i class="bi bi-water me-1"></i>Liquidity Sweep
-                        </span>
-                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2">
-                            <i class="bi bi-arrow-up-circle me-1"></i>Break of Structure
-                        </span>
-                    </div>
+                    <h6 class="fw-bold mb-3">SMC Pattern</h6>
+                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2">
+                        <i class="bi bi-graph-up me-1"></i>${signal.pattern}
+                    </span>
                 </div>
+                ${signal.notes ? `
                 <div class="mt-4">
-                    <h6 class="fw-bold mb-3">Market Context</h6>
-                    <p class="small text-muted mb-0">
-                        Strong bullish momentum detected on the 15-minute timeframe. Price has swept liquidity below recent lows and is now reacting from a bullish order block. Fair value gap present above current price, suggesting potential upside. Break of structure confirmed at $66,200 level.
-                    </p>
+                    <h6 class="fw-bold mb-3">Analysis Notes</h6>
+                    <p class="small text-muted mb-0">${signal.notes}</p>
                 </div>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-success">
-                    <i class="bi bi-play-circle-fill me-2"></i>Execute for All Users
-                </button>
+                ` : ''}
+            `;
+            
+            document.getElementById('signalDetailsContent').innerHTML = content;
+            
+            // Update footer with execute button if signal is active
+            const footer = document.getElementById('signalDetailsFooter');
+            if (signal.status === 'active') {
+                footer.innerHTML = `
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <form action="/admin/signals/${signal.id}/execute" method="POST" class="d-inline">
+                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-play-circle-fill me-2"></i>Execute for All Users
+                        </button>
+                    </form>
+                `;
+            } else {
+                footer.innerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('signalDetailsContent').innerHTML = `
+                <div class="alert alert-danger">
+                    Failed to load signal details. Please try again.
+                </div>
+            `;
+        });
+}
+
+// Refresh signals
+function refreshSignals() {
+    location.reload();
+}
+
+// Toast notification helper
+function showToast(type, message) {
+    // If using Bootstrap Toast
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
             </div>
         </div>
-    </div>
-</div>
+    `;
+    
+    // Or use alert as fallback
+    alert(message);
+}
 
-@endsection
-
-@push('scripts')
-<script>
-    function startSignalGeneration() {
-        const modal = bootstrap.Modal.getInstance(document.getElementById('generateSignalModal'));
-        modal.hide();
-        
-        // Show loading state
-        alert('Signal generation started! Analysis will complete in 30-60 seconds.');
-        
-        // In production, this would trigger the actual signal generation
-        setTimeout(() => {
-            location.reload();
-        }, 2000);
-    }
-
-    // Auto-refresh signals every 60 seconds
-    setInterval(() => {
-        console.log('Auto-refreshing signals...');
-        // Add actual refresh logic here
-    }, 60000);
+// Auto-refresh signals every 60 seconds
+setInterval(() => {
+    // Silent refresh without page reload
+    fetch(window.location.href, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newTable = doc.querySelector('#signalsTable tbody');
+        if (newTable) {
+            document.querySelector('#signalsTable tbody').innerHTML = newTable.innerHTML;
+        }
+    })
+    .catch(error => console.error('Auto-refresh failed:', error));
+}, 60000);
 </script>
 @endpush

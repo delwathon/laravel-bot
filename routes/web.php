@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\TradeHistoryController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\SignalController as AdminSignalController;
@@ -63,12 +65,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/trades', [AdminTradeController::class, 'index'])->name('trades.index');
     Route::post('/trades', [AdminTradeController::class, 'store'])->name('trades.store');
     Route::delete('/trades/{trade}', [AdminTradeController::class, 'destroy'])->name('trades.destroy');
+    Route::post('/trades/close-all', [AdminTradeController::class, 'closeAll'])->name('trades.close-all');
+    Route::get('/trades/{trade}/details', [AdminTradeController::class, 'details'])->name('trades.details');
+    Route::post('/trades/preview-calculation', [AdminTradeController::class, 'previewCalculation'])->name('trades.preview-calculation');
+
+    // Trade History
+    Route::get('/trade-history', [TradeHistoryController::class, 'index'])->name('trade-history.index');
+    Route::get('/trade-history/export', [TradeHistoryController::class, 'export'])->name('trade-history.export');
     
     // Monitoring Overview
     Route::get('/monitoring', [MonitoringController::class, 'overview'])->name('monitoring.overview');
-    
-    // History
-    Route::get('/history', [AdminDashboardController::class, 'history'])->name('history.index');
     
     // User API Keys Management (view users' API keys)
     Route::get('/api-keys', [AdminSettingsController::class, 'apiKeys'])->name('api-keys.index');
@@ -81,7 +87,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api-keys/{exchange}/sync', [AdminSettingsController::class, 'syncAdminBalance'])->name('api-keys.sync');
     
     // Analytics
-    Route::get('/analytics', [AdminSettingsController::class, 'analytics'])->name('analytics.index');
+    Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+    Route::get('/analytics/chart-data', [AnalyticsController::class, 'getChartData'])->name('analytics.chart-data');
     
     // Settings
     Route::get('/settings/signal-generator', [AdminSettingsController::class, 'signalGenerator'])->name('settings.signal-generator');

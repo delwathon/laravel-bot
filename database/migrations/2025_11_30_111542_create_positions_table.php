@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('trade_id')->constrained()->onDelete('cascade');
-            $table->foreignId('exchange_account_id')->constrained()->onDelete('cascade');
+            $table->foreignId('exchange_account_id')->nullable();
             
             // Position Details
             $table->string('symbol'); // e.g., BTCUSDT

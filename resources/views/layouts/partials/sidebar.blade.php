@@ -85,7 +85,7 @@
                     Analytics
                 </a>
                 
-                <a href="{{ route('admin.history.index') }}" class="nav-link {{ request()->routeIs('admin.history.*') ? 'active' : '' }}">
+                <a href="{{ route('admin.trade-history.index') }}" class="nav-link {{ request()->routeIs('admin.trade-history.*') ? 'active' : '' }}">
                     <i class="bi bi-clock-history"></i>
                     Trade History
                 </a>
@@ -272,7 +272,7 @@
                     Analytics
                 </a>
                 
-                <a href="{{ route('admin.history.index') }}" class="nav-link {{ request()->routeIs('admin.history.*') ? 'active' : '' }}" data-bs-dismiss="offcanvas">
+                <a href="{{ route('admin.trade-history.index') }}" class="nav-link {{ request()->routeIs('admin.trade-history.*') ? 'active' : '' }}" data-bs-dismiss="offcanvas">
                     <i class="bi bi-clock-history"></i>
                     Trade History
                 </a>

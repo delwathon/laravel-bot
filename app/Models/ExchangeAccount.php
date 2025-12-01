@@ -16,12 +16,14 @@ class ExchangeAccount extends Model
         'api_key',
         'api_secret',
         'is_active',
+        'is_admin',
         'balance',
         'last_synced_at',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_admin' => 'boolean',
         'balance' => 'decimal:8',
         'last_synced_at' => 'datetime',
     ];
@@ -83,5 +85,58 @@ class ExchangeAccount extends Model
         }
         
         return substr($key, 0, 4) . str_repeat('*', $length - 8) . substr($key, -4);
+    }
+
+    /**
+     * Get admin's Bybit account
+     * 
+     * @return ExchangeAccount|null
+     */
+    public static function getBybitAccount()
+    {
+        return self::where('exchange', 'bybit')
+            ->where('is_active', true)
+            ->where('is_admin', true)
+            ->first();
+    }
+
+    /**
+     * Get admin's exchange account for specific exchange
+     * 
+     * @param string $exchange
+     * @return ExchangeAccount|null
+     */
+    public static function getAdminAccount($exchange = 'bybit')
+    {
+        return self::where('exchange', $exchange)
+            ->where('is_active', true)
+            ->where('is_admin', true)
+            ->first();
+    }
+
+    /**
+     * Check if this is an admin account
+     * 
+     * @return bool
+     */
+    public function isAdminAccount()
+    {
+        return $this->is_admin === true;
+    }
+
+    /**
+     * Scope: Admin accounts only
+     */
+    public function scopeAdminAccounts($query)
+    {
+        return $query->where('is_admin', true);
+    }
+
+    /**
+     * Scope: User accounts only
+     */
+    public function scopeUserAccounts($query)
+    {
+        return $query->where('is_admin', false);
     }
 }

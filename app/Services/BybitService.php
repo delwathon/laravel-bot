@@ -303,6 +303,80 @@ class BybitService
         }
     }
 
+    /**
+     * Get actual execution price for an order
+     * This fetches the avgPrice (average fill price) from Bybit
+     * 
+     * @param string $symbol
+     * @param string $orderId
+     * @return float|null
+     */
+    public function getExecutionPrice($symbol, $orderId)
+    {
+        try {
+            $orderStatus = $this->getOrderStatus($symbol, $orderId);
+            
+            if (!$orderStatus) {
+                Log::warning("Could not get order status for order {$orderId}");
+                return null;
+            }
+
+            // avgPrice is the actual average execution price
+            $executionPrice = $orderStatus['avgPrice'] ?? null;
+            
+            if ($executionPrice && $executionPrice > 0) {
+                Log::info("Execution price for order {$orderId}: {$executionPrice}");
+                return (float) $executionPrice;
+            }
+            
+            // If avgPrice is 0, order might not be filled yet
+            $orderStatus_status = $orderStatus['orderStatus'] ?? 'Unknown';
+            
+            if ($orderStatus_status === 'Filled') {
+                // For filled orders, avgPrice should be available
+                Log::warning("Order {$orderId} is Filled but avgPrice is 0 or missing");
+            } else {
+                Log::info("Order {$orderId} status: {$orderStatus_status} - not filled yet");
+            }
+            
+            return null;
+            
+        } catch (\Exception $e) {
+            Log::error("Failed to get execution price for order {$orderId}: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Wait for order to fill and get execution price
+     * Polls order status up to maxAttempts times with delay between attempts
+     * 
+     * @param string $symbol
+     * @param string $orderId
+     * @param int $maxAttempts
+     * @param int $delayMs Delay in milliseconds between attempts
+     * @return float|null
+     */
+    public function waitForOrderFillAndGetPrice($symbol, $orderId, $maxAttempts = 10, $delayMs = 500)
+    {
+        for ($i = 0; $i < $maxAttempts; $i++) {
+            $executionPrice = $this->getExecutionPrice($symbol, $orderId);
+            
+            if ($executionPrice !== null && $executionPrice > 0) {
+                Log::info("Order {$orderId} filled on attempt " . ($i + 1) . " with price: {$executionPrice}");
+                return $executionPrice;
+            }
+            
+            if ($i < $maxAttempts - 1) {
+                // Sleep before next attempt (convert ms to microseconds)
+                usleep($delayMs * 1000);
+            }
+        }
+        
+        Log::warning("Order {$orderId} did not fill after {$maxAttempts} attempts");
+        return null;
+    }
+
     public function getKlines($symbol, $interval = '15', $limit = 200)
     {
         try {

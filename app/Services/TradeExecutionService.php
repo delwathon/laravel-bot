@@ -2,47 +2,48 @@
 
 namespace App\Services;
 
+use App\Models\Signal;
 use App\Models\Trade;
 use App\Models\Position;
-use App\Models\Signal;
 use App\Models\User;
 use App\Models\ExchangeAccount;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TradeExecutionService
 {
-    public function executeSignalForUser(Signal $signal, User $user, $positionSizePercent = null)
+    public function executeTradeForUser(Signal $signal, User $user)
     {
-        if (!$user->hasConnectedExchange()) {
-            throw new \Exception('User has no connected exchange account');
-        }
-
         $exchangeAccount = $user->exchangeAccount;
-        
-        if (!$exchangeAccount->is_active) {
-            throw new \Exception('Exchange account is not active');
+
+        if (!$exchangeAccount || !$exchangeAccount->isConnected()) {
+            throw new \Exception("User {$user->id} has no active exchange account");
         }
 
         $bybit = new BybitService($exchangeAccount->api_key, $exchangeAccount->api_secret);
-        
         $balance = $bybit->getBalance();
-        
-        $positionSize = $positionSizePercent ?? $signal->position_size_percent;
-        $riskAmount = ($balance * $positionSize) / 100;
-        
-        $stopLossDistance = abs($signal->entry_price - $signal->stop_loss);
-        $quantity = $riskAmount / $stopLossDistance;
-        
-        $quantity = round($quantity, 3);
+
+        if ($balance <= 0) {
+            throw new \Exception("Insufficient balance for user {$user->id}");
+        }
+
+        // Get position size percentage from settings
+        $positionSizePercent = \App\Models\Setting::get('signal_position_size', 5);
         
         // Get leverage from settings
         $leverageSetting = \App\Models\Setting::get('signal_leverage', 'Max');
         $leverage = $this->calculateLeverage($leverageSetting, $signal->symbol, $bybit);
 
+        // Calculate quantity
+        $riskAmount = ($balance * $positionSizePercent) / 100;
+        $stopLossDistance = abs($signal->entry_price - $signal->stop_loss);
+        $quantity = $riskAmount / $stopLossDistance;
+        $quantity = round($quantity, 3);
+
         DB::beginTransaction();
-        
+
         try {
+            // Create trade record with SUBMITTED entry price (not actual yet)
             $trade = Trade::create([
                 'user_id' => $user->id,
                 'signal_id' => $signal->id,
@@ -50,7 +51,7 @@ class TradeExecutionService
                 'symbol' => $signal->symbol,
                 'exchange' => 'bybit',
                 'type' => $signal->type,
-                'entry_price' => $signal->entry_price,
+                'entry_price' => $signal->entry_price, // This will be updated with actual price
                 'stop_loss' => $signal->stop_loss,
                 'take_profit' => $signal->take_profit,
                 'quantity' => $quantity,
@@ -58,6 +59,7 @@ class TradeExecutionService
                 'status' => 'pending',
             ]);
 
+            // Execute trade on Bybit
             $side = $signal->type === 'long' ? 'Buy' : 'Sell';
             
             $orderResult = $bybit->placeOrder(
@@ -68,19 +70,35 @@ class TradeExecutionService
                 null,
                 $signal->stop_loss,
                 $signal->take_profit,
-                $leverage  // Pass leverage to Bybit
+                $leverage
             );
 
             if (!$orderResult || !isset($orderResult['orderId'])) {
                 throw new \Exception('Failed to place order on Bybit');
             }
 
+            $orderId = $orderResult['orderId'];
+            Log::info("Order placed for user {$user->id}: Order ID {$orderId}");
+
+            // CRITICAL: Wait for order to fill and get ACTUAL execution price
+            $actualExecutionPrice = $bybit->waitForOrderFillAndGetPrice($signal->symbol, $orderId, 10, 500);
+            
+            if ($actualExecutionPrice === null || $actualExecutionPrice <= 0) {
+                Log::warning("Could not get execution price for order {$orderId}, falling back to signal entry price");
+                $actualExecutionPrice = $signal->entry_price; // Fallback
+            }
+
+            Log::info("Actual execution price for user {$user->id}: {$actualExecutionPrice} (Submitted: {$signal->entry_price})");
+
+            // Update trade with ACTUAL execution price
             $trade->update([
-                'exchange_order_id' => $orderResult['orderId'],
+                'exchange_order_id' => $orderId,
+                'entry_price' => $actualExecutionPrice, // Update with ACTUAL price
                 'status' => 'open',
                 'opened_at' => now(),
             ]);
 
+            // Create position with ACTUAL execution price
             $position = Position::create([
                 'user_id' => $user->id,
                 'trade_id' => $trade->id,
@@ -88,8 +106,8 @@ class TradeExecutionService
                 'symbol' => $signal->symbol,
                 'exchange' => 'bybit',
                 'side' => $signal->type,
-                'entry_price' => $signal->entry_price,
-                'current_price' => $signal->entry_price,
+                'entry_price' => $actualExecutionPrice, // ACTUAL execution price
+                'current_price' => $actualExecutionPrice, // Start with execution price
                 'quantity' => $quantity,
                 'leverage' => $leverage,
                 'stop_loss' => $signal->stop_loss,
@@ -100,15 +118,19 @@ class TradeExecutionService
 
             DB::commit();
             
-            Log::info("Trade executed for user {$user->id}: {$signal->symbol} {$signal->type} with {$leverage}x leverage", [
+            Log::info("Trade executed for user {$user->id}: {$signal->symbol} {$signal->type} @ {$actualExecutionPrice} with {$leverage}x leverage", [
                 'trade_id' => $trade->id,
-                'order_id' => $orderResult['orderId'],
+                'order_id' => $orderId,
+                'submitted_price' => $signal->entry_price,
+                'actual_price' => $actualExecutionPrice,
+                'slippage' => abs($actualExecutionPrice - $signal->entry_price),
             ]);
 
             return [
                 'success' => true,
                 'trade' => $trade,
                 'position' => $position,
+                'actual_execution_price' => $actualExecutionPrice,
             ];
 
         } catch (\Exception $e) {

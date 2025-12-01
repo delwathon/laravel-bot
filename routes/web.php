@@ -73,8 +73,12 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/trade-history', [TradeHistoryController::class, 'index'])->name('trade-history.index');
     Route::get('/trade-history/export', [TradeHistoryController::class, 'export'])->name('trade-history.export');
     
-    // Monitoring Overview
+    // Monitoring Overview - ENHANCED
     Route::get('/monitoring', [MonitoringController::class, 'overview'])->name('monitoring.overview');
+    Route::post('/monitoring/refresh-all', [MonitoringController::class, 'refreshAllMonitors'])->name('monitoring.refresh-all');
+    Route::get('/monitoring/positions/{position}/details', [MonitoringController::class, 'getPositionDetails'])->name('monitoring.position-details');
+    Route::post('/monitoring/positions/{position}/force-close', [MonitoringController::class, 'forceClosePosition'])->name('monitoring.position-close');
+    Route::post('/monitoring/positions/{position}/restart', [MonitoringController::class, 'restartMonitor'])->name('monitoring.position-restart');
     
     // User API Keys Management (view users' API keys)
     Route::get('/api-keys', [AdminSettingsController::class, 'apiKeys'])->name('api-keys.index');
@@ -83,7 +87,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/api-keys', [AdminSettingsController::class, 'storeApiKey'])->name('api-keys.store');
     Route::delete('/api-keys/{exchange}', [AdminSettingsController::class, 'deleteApiKey'])->name('api-keys.destroy');
     Route::patch('/api-keys/{exchange}/toggle', [AdminSettingsController::class, 'toggleApiKey'])->name('api-keys.toggle');
-    // Add this route for admin balance sync
     Route::post('/api-keys/{exchange}/sync', [AdminSettingsController::class, 'syncAdminBalance'])->name('api-keys.sync');
     
     // Analytics

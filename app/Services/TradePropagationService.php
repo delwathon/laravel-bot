@@ -6,7 +6,7 @@ use App\Models\Signal;
 use App\Models\User;
 use App\Models\Trade;
 use App\Models\Position;
-use App\Models\AdminExchangeAccount;
+use App\Models\ExchangeAccount;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
@@ -23,7 +23,7 @@ class TradePropagationService
     {
         $users = User::where('is_admin', false)
             ->whereHas('exchangeAccount', function($query) {
-                $query->where('is_active', true);
+                $query->where('is_active', true)->where('is_admin', false);
             })
             ->get();
 
@@ -36,7 +36,7 @@ class TradePropagationService
 
         foreach ($users as $user) {
             try {
-                $this->tradeExecutionService->executeSignalForUser($signal, $user);
+                $this->tradeExecutionService->executeTradeForUser($signal, $user);
                 $results['successful']++;
             } catch (\Exception $e) {
                 $results['failed']++;
@@ -119,7 +119,7 @@ class TradePropagationService
     {
         try {
             // Get admin exchange account
-            $adminAccount = AdminExchangeAccount::getBybitAccount();
+            $adminAccount = ExchangeAccount::getBybitAccount();
             
             if (!$adminAccount) {
                 throw new \Exception('No admin Bybit account configured. Please add one in settings.');
@@ -156,7 +156,7 @@ class TradePropagationService
             $trade = Trade::create([
                 'user_id' => $admin->id,
                 'signal_id' => $signal->id,
-                'exchange_account_id' => null, // Admin uses AdminExchangeAccount
+                'exchange_account_id' => null,
                 'symbol' => $signal->symbol,
                 'exchange' => 'bybit',
                 'type' => $signal->type,
@@ -189,9 +189,16 @@ class TradePropagationService
                 throw new \Exception('Failed to place order on Bybit: Invalid response');
             }
 
+            $orderId = $orderResult['orderId'];
+
+            // ADD THIS: Fetch actual execution price
+            $actualPrice = $bybit->waitForOrderFillAndGetPrice($signal->symbol, $orderId);
+            if (!$actualPrice) $actualPrice = $signal->entry_price; // Fallback
+
             // Update trade with order details
             $trade->update([
-                'exchange_order_id' => $orderResult['orderId'],
+                'exchange_order_id' => $orderId,
+                'entry_price' => $actualPrice,  // ← CHANGED
                 'status' => 'open',
                 'opened_at' => now(),
             ]);
@@ -204,8 +211,8 @@ class TradePropagationService
                 'symbol' => $signal->symbol,
                 'exchange' => 'bybit',
                 'side' => $signal->type,
-                'entry_price' => $signal->entry_price,
-                'current_price' => $signal->entry_price,
+                'entry_price' => $actualPrice,      // ← CHANGED
+                'current_price' => $actualPrice,     // ← CHANGED
                 'quantity' => $quantity,
                 'leverage' => $leverage,
                 'stop_loss' => $signal->stop_loss,

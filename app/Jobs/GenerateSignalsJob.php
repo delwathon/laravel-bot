@@ -243,7 +243,7 @@ class GenerateSignalsJob implements ShouldQueue
         $positionSize = Setting::get('signal_position_size', 5);
         
         // Get admin account
-        $adminAccount = \App\Models\AdminExchangeAccount::getBybitAccount();
+        $adminAccount = \App\Models\ExchangeAccount::getBybitAccount();
         
         if (!$adminAccount) {
             Log::warning('No admin Bybit account configured. Executing only for users.');

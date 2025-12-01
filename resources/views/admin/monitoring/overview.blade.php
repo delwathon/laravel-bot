@@ -145,7 +145,7 @@
 
 <!-- System Health & Errors -->
 @if($recentErrors->count() > 0)
-<div class="card border-0 shadow-sm mb-4 border-start border-warning border-4">
+<div class="card shadow-sm mb-4 border-start border-warning border-4">
     <div class="card-header bg-transparent border-0 p-4">
         <div class="d-flex justify-content-between align-items-center">
             <h5 class="fw-bold mb-0">

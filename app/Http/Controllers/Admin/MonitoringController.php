@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Models\Position;
 use App\Models\Trade;
 use App\Models\ExchangeAccount;
-use App\Models\AdminExchangeAccount;
 use App\Services\BybitService;
 use App\Services\PositionMonitorService;
 use Illuminate\Http\Request;
@@ -234,7 +233,7 @@ class MonitoringController extends Controller
 
         // Check admin Bybit connection
         try {
-            $adminAccount = AdminExchangeAccount::getBybitAccount();
+            $adminAccount = ExchangeAccount::getBybitAccount();
             
             if ($adminAccount) {
                 $startTime = microtime(true);

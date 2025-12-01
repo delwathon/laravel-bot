@@ -1,21 +1,9 @@
-Live Monitoring should monitor admin trades only. Manual actions taken on admin trade should later be taken forother users automaticall, such as cancel position, cancel order, adjust SL or TP price, and others.
+There is need to update all of the following:
 
-User active positions and trade history should be accessible via admin/users/show.blade.php
+The unrealized P&L percentage on the monitoring script table (Unrealized P&L column) should be leverage-aware: https://www.bybit.com/en/help-center/article/Profit-Loss-calculations-USDT-Contract/#B
 
-Users can only sign up for one exchange. It is either you are signed up for binance or for bybit. You cannot sign up for both
+signal_id should also be stored in positions table, so that when admin trade is closed in the Admin Trade page (http://127.0.0.1:8000/admin/trades), it closes for all propagated users with same signal_id too.
 
-Signal generator should focus on carrying out its analysis using bybit. Signal result can later executed for all users irrespective of their exchange. We cannot run analysis for bybit exchange separately and run for binance exchange separately too
+Scheduled/background balance sync has failed to work. Fix things
 
-Users have the oportunity to adjust their trading parameters according to their wish. Of course, there would be a default settings.
-
-As admin, i will be using bybit account. So, api keys should be for bybit. It can be live mode bybit api credentials, and demo mode api credentials. I should be able to toggle between live mode and demo mode from the header. Only admin account can use demo trading for the sake of testing.
-
-Top signals generated are expected to auto-execute
-
-Telegram channel notification
-
-User onboarding after successful registration to include monthly payment subscription to admin TRX, ETH or  BSC USDT address. Subscription for all users is monthly. Only after payment confirmed will they be able to configure api keys and other things
-
-Default leverage must be max available leverage for the symbol
-
-
+Scheduled signal generator & Manual Generate Now button not working.

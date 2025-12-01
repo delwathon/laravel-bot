@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AdminExchangeAccount;
 use App\Models\ExchangeAccount;
 use App\Models\Setting;
 use App\Models\User;
@@ -15,7 +14,7 @@ class SettingsController extends Controller
 {
     public function apiKeys()
     {
-        $bybitAccount = AdminExchangeAccount::where('exchange', 'bybit')->first();
+        $bybitAccount = ExchangeAccount::getBybitAccount();
         
         $adminBalance = 0;
         if ($bybitAccount && $bybitAccount->is_active) {
@@ -32,15 +31,17 @@ class SettingsController extends Controller
         }
         
         $userApiKeys = ExchangeAccount::with('user')
+            ->where('is_admin', false)
             ->latest()
             ->paginate(20);
 
-        $totalKeys = ExchangeAccount::count();
-        $activeKeys = ExchangeAccount::where('is_active', true)->count();
-        $inactiveKeys = ExchangeAccount::where('is_active', false)->count();
-        $totalUsers = User::where('is_admin', false)->count();
+        $totalKeys = ExchangeAccount::where('is_admin', false)->count();
+        $activeKeys = ExchangeAccount::where('is_active', true)->where('is_admin', false)->count();
+        $inactiveKeys = ExchangeAccount::where('is_active', false)->where('is_admin', false)->count();
+        $totalUsers = User::where('is_admin', false)->where('is_admin', false)->count();
 
         $lastSyncedAccount = ExchangeAccount::where('is_active', true)
+            ->where('is_admin', false)
             ->whereNotNull('last_synced_at')
             ->orderBy('last_synced_at', 'desc')
             ->first();
@@ -74,12 +75,17 @@ class SettingsController extends Controller
                     ->withErrors(['error' => 'Failed to connect to Bybit. Please check your API credentials.']);
             }
 
-            AdminExchangeAccount::updateOrCreate(
-                ['exchange' => $validated['exchange']],
+            $balance = $bybit->getBalance();
+            
+            $admin = User::where('is_admin', true)->first();
+    
+            ExchangeAccount::updateOrCreate(
+                ['user_id' => $admin->id, 'exchange' => $validated['exchange']],
                 [
                     'api_key' => $validated['api_key'],
                     'api_secret' => $validated['api_secret'],
                     'is_active' => true,
+                    'is_admin' => true,  // ← ADD THIS
                     'last_synced_at' => now(),
                 ]
             );
@@ -98,7 +104,7 @@ class SettingsController extends Controller
     public function deleteApiKey($exchange)
     {
         try {
-            $account = AdminExchangeAccount::where('exchange', $exchange)->first();
+            $account = ExchangeAccount::where('exchange', $exchange)->where('is_admin', true)->first();
             
             if ($account) {
                 $account->delete();
@@ -115,7 +121,7 @@ class SettingsController extends Controller
     public function toggleApiKey($exchange)
     {
         try {
-            $account = AdminExchangeAccount::where('exchange', $exchange)->firstOrFail();
+            $account = ExchangeAccount::where('exchange', $exchange)->where('is_admin', true)->firstOrFail();
             
             $account->update([
                 'is_active' => !$account->is_active,
@@ -133,7 +139,7 @@ class SettingsController extends Controller
     public function syncAdminBalance($exchange)
     {
         try {
-            $account = AdminExchangeAccount::where('exchange', $exchange)->firstOrFail();
+            $account = ExchangeAccount::where('exchange', $exchange)->where('is_admin', true)->firstOrFail();
             
             $bybit = new BybitService($account->api_key, $account->api_secret);
             $balance = $bybit->getBalance();

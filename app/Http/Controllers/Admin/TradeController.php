@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Trade;
 use App\Models\User;
-use App\Models\AdminExchangeAccount;
+use App\Models\ExchangeAccount;
 use App\Services\TradePropagationService;
 use App\Services\BybitService;
 use Illuminate\Http\Request;
@@ -42,7 +42,7 @@ class TradeController extends Controller
         $leverageNumeric = 100; // Default for "Max"
         
         try {
-            $adminAccount = AdminExchangeAccount::getBybitAccount();
+            $adminAccount = ExchangeAccount::getBybitAccount();
             if ($adminAccount) {
                 $bybit = new BybitService($adminAccount->api_key, $adminAccount->api_secret);
                 $adminBalance = $bybit->getBalance();
@@ -207,7 +207,7 @@ class TradeController extends Controller
         }
 
         // Close admin trade
-        $adminAccount = AdminExchangeAccount::getBybitAccount();
+        $adminAccount = ExchangeAccount::getBybitAccount();
         if ($adminAccount) {
             $bybit = new BybitService($adminAccount->api_key, $adminAccount->api_secret);
             
@@ -344,7 +344,7 @@ class TradeController extends Controller
             $leverageSetting = \App\Models\Setting::get('signal_leverage', 'Max');
             
             // Get admin account and balance
-            $adminAccount = AdminExchangeAccount::getBybitAccount();
+            $adminAccount = ExchangeAccount::getBybitAccount();
             if (!$adminAccount) {
                 return response()->json(['error' => 'No admin account configured'], 400);
             }

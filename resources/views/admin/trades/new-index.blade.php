@@ -192,7 +192,7 @@
                     <button type="button" class="btn btn-outline-secondary" onclick="previewTrade()">
                         <i class="bi bi-eye me-2"></i>Preview Impact
                     </button>
-                    <button type="submit" class="btn btn-success">
+                    <button type="button" class="btn btn-success" onclick="showExecuteTradeConfirmation()">
                         <i class="bi bi-play-circle-fill me-2"></i>Execute for All Users
                     </button>
                 </div>
@@ -210,7 +210,7 @@
                 <p class="text-muted small mb-0">Manually executed trades and their propagation status</p>
             </div>
             @if($trades->where('status', 'open')->count() > 0)
-            <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#closeAllModal">
+            <button class="btn btn-outline-danger" onclick="showCloseAllModal()">
                 <i class="bi bi-x-octagon me-2"></i>Close All Positions
             </button>
             @endif
@@ -252,75 +252,55 @@
                         </td>
                         <td>
                             <div class="small">
-                                <span class="text-success">${{ number_format($trade->take_profit, 2) }}</span>
-                                <span class="text-muted">/</span>
-                                <span class="text-danger">${{ number_format($trade->stop_loss, 2) }}</span>
+                                <div class="text-success"><i class="bi bi-arrow-up-circle"></i> ${{ number_format($trade->take_profit, 2) }}</div>
+                                <div class="text-danger"><i class="bi bi-arrow-down-circle"></i> ${{ number_format($trade->stop_loss, 2) }}</div>
                             </div>
                         </td>
                         <td>
-                            @php
-                                $userTrades = $trade->signal ? $trade->signal->trades()->count() : 0;
-                                $successfulTrades = $trade->signal ? $trade->signal->trades()->where('status', '!=', 'failed')->count() : 0;
-                            @endphp
-                            <div class="d-flex align-items-center">
-                                <div class="progress me-2" style="width: 60px; height: 6px;">
-                                    @if($userTrades > 0)
-                                        <div class="progress-bar bg-success" style="width: {{ ($successfulTrades / $userTrades) * 100 }}%"></div>
-                                    @endif
-                                </div>
-                                <span class="small fw-semibold">{{ $successfulTrades }}/{{ $userTrades }}</span>
-                            </div>
-                            @if($userTrades > 0)
-                                <small class="text-muted">{{ number_format(($successfulTrades / $userTrades) * 100, 1) }}% success</small>
+                            @if($trade->signal)
+                                <span class="badge bg-primary bg-opacity-10 text-primary">
+                                    {{ $trade->signal->trades->count() }} users
+                                </span>
+                            @else
+                                <span class="text-muted small">—</span>
                             @endif
                         </td>
                         <td>
                             @if($trade->status === 'closed')
-                                <div class="fw-bold {{ $trade->realized_pnl >= 0 ? 'text-success' : 'text-danger' }}">
+                                <div class="fw-semibold {{ $trade->realized_pnl >= 0 ? 'text-success' : 'text-danger' }}">
                                     {{ $trade->realized_pnl >= 0 ? '+' : '' }}${{ number_format($trade->realized_pnl, 2) }}
                                 </div>
-                                <div class="small text-muted">
-                                    {{ $trade->realized_pnl >= 0 ? '+' : '' }}{{ number_format($trade->realized_pnl_percent, 2) }}%
-                                </div>
+                                <small class="{{ $trade->realized_pnl >= 0 ? 'text-success' : 'text-danger' }}">
+                                    {{ $trade->realized_pnl >= 0 ? '+' : '' }}{{ number_format($trade->realized_pnl_percent, 1) }}%
+                                </small>
                             @else
-                                @php
-                                    $position = $trade->position;
-                                    $unrealizedPnl = $position ? $position->unrealized_pnl : 0;
-                                @endphp
-                                <div class="fw-bold {{ $unrealizedPnl >= 0 ? 'text-success' : 'text-danger' }}">
-                                    {{ $unrealizedPnl >= 0 ? '+' : '' }}${{ number_format($unrealizedPnl, 2) }}
-                                </div>
-                                <div class="small text-muted">Unrealized</div>
+                                <span class="text-muted small">—</span>
                             @endif
                         </td>
                         <td>
                             @php
                                 $statusConfig = match($trade->status) {
-                                    'open' => ['color' => 'success', 'icon' => 'circle-fill', 'text' => 'Active'],
+                                    'open' => ['color' => 'success', 'icon' => 'circle-fill', 'text' => 'Open'],
                                     'closed' => ['color' => 'secondary', 'icon' => 'check-circle-fill', 'text' => 'Closed'],
+                                    'pending' => ['color' => 'warning', 'icon' => 'clock-fill', 'text' => 'Pending'],
                                     'failed' => ['color' => 'danger', 'icon' => 'x-circle-fill', 'text' => 'Failed'],
-                                    default => ['color' => 'warning', 'icon' => 'clock-fill', 'text' => ucfirst($trade->status)]
+                                    default => ['color' => 'secondary', 'icon' => 'circle', 'text' => ucfirst($trade->status)]
                                 };
                             @endphp
                             <span class="badge bg-{{ $statusConfig['color'] }} bg-opacity-10 text-{{ $statusConfig['color'] }} border border-{{ $statusConfig['color'] }} border-opacity-25">
                                 <i class="bi bi-{{ $statusConfig['icon'] }}" style="font-size: 6px;"></i> {{ $statusConfig['text'] }}
                             </span>
-                            @if($trade->status === 'open' && $trade->position)
-                                <div class="text-muted small mt-1">
-                                    {{ $trade->created_at->diffForHumans() }}
-                                </div>
-                            @endif
                         </td>
                         <td class="px-4 text-end">
                             <div class="btn-group btn-group-sm">
-                                @if($trade->status === 'open')
-                                    <button class="btn btn-outline-danger" onclick="closePosition({{ $trade->id }}, '{{ $trade->symbol }}')" title="Close Position">
-                                        <i class="bi bi-x-circle"></i>
-                                    </button>
-                                @endif
                                 <button class="btn btn-outline-primary" onclick="viewTradeDetails({{ $trade->id }})" title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </button>
+                                @if($trade->status === 'open')
+                                    <button class="btn btn-outline-danger" onclick="showClosePositionModal({{ $trade->id }}, '{{ $trade->symbol }}')" title="Close Position">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -344,13 +324,44 @@
     @endif
 </div>
 
+<!-- Execute Trade Confirmation Modal -->
+<div class="modal fade" id="executeTradeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 bg-success bg-opacity-10">
+                <h5 class="modal-title fw-bold text-success">
+                    <i class="bi bi-play-circle-fill me-2"></i>Execute Trade Confirmation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Are you sure you want to execute this trade?</p>
+                <div class="alert alert-info border-0 mb-0">
+                    <strong>This will:</strong>
+                    <ul class="mb-0 mt-2 small">
+                        <li>Execute the trade for your admin account</li>
+                        <li>Propagate to all active users with connected exchanges</li>
+                        <li>Create positions based on current settings ({{ $positionSize }}% position size, {{ $leverage }} leverage)</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="submitExecuteTradeForm()">
+                    <i class="bi bi-check-circle me-2"></i>Confirm & Execute
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Close Position Modal -->
 <div class="modal fade" id="closePositionModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header border-0 bg-danger bg-opacity-10">
                 <h5 class="modal-title fw-bold text-danger">
-                    <i class="bi bi-x-octagon me-2"></i>Close Position
+                    <i class="bi bi-x-circle-fill me-2"></i>Close Position
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -393,7 +404,7 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ route('admin.trades.close-all') }}">
+            <form method="POST" action="{{ route('admin.trades.close-all') }}" id="closeAllForm">
                 @csrf
                 <div class="modal-body">
                     <p class="mb-3">Are you sure you want to close ALL admin positions?</p>
@@ -470,20 +481,45 @@
 
 @push('scripts')
 <script>
-// Execute trade form submission
-document.getElementById('executeTradeForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    if(confirm('Execute this trade for admin account and propagate to all users?')) {
-        const btn = this.querySelector('button[type="submit"]');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Executing...';
-        this.submit();
-    }
+// Bootstrap Modal instances
+let executeTradeModal;
+let closePositionModal;
+let closeAllModal;
+
+// Initialize modals on page load
+document.addEventListener('DOMContentLoaded', function() {
+    executeTradeModal = new bootstrap.Modal(document.getElementById('executeTradeModal'));
+    closePositionModal = new bootstrap.Modal(document.getElementById('closePositionModal'));
+    closeAllModal = new bootstrap.Modal(document.getElementById('closeAllModal'));
 });
 
-// Close position
-function closePosition(tradeId, symbol) {
+// Show execute trade confirmation modal
+function showExecuteTradeConfirmation() {
+    const form = document.getElementById('executeTradeForm');
+    
+    // Validate form first
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    executeTradeModal.show();
+}
+
+// Submit execute trade form
+function submitExecuteTradeForm() {
+    const form = document.getElementById('executeTradeForm');
+    const btn = document.querySelector('#executeTradeModal .btn-success');
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Executing...';
+    
+    executeTradeModal.hide();
+    form.submit();
+}
+
+// Show close position modal
+function showClosePositionModal(tradeId, symbol) {
     const form = document.getElementById('closePositionForm');
     form.action = `/admin/trades/${tradeId}`;
     
@@ -499,7 +535,7 @@ function closePosition(tradeId, symbol) {
         </div>
     `;
     
-    new bootstrap.Modal(document.getElementById('closePositionModal')).show();
+    closePositionModal.show();
     
     // Fetch actual trade details
     fetch(`/admin/trades/${tradeId}/details`)
@@ -507,50 +543,30 @@ function closePosition(tradeId, symbol) {
         .then(data => {
             const currentPnL = data.realized_pnl || 0;
             const statusBadge = data.status === 'open' 
-                ? '<span class="badge bg-success">Open</span>' 
-                : '<span class="badge bg-secondary">Closed</span>';
+                ? '<span class="badge bg-success bg-opacity-10 text-success">Open</span>'
+                : '<span class="badge bg-secondary bg-opacity-10 text-secondary">Closed</span>';
             
             document.getElementById('closePositionSummary').innerHTML = `
                 <div class="card-body">
-                    <h6 class="fw-bold mb-3">Position Summary</h6>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Pair</span>
-                        <span class="fw-bold">${data.symbol}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Type</span>
-                        <span class="fw-bold text-uppercase">${data.type}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Entry Price</span>
-                        <span class="fw-bold">$${parseFloat(data.entry_price).toFixed(2)}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Quantity</span>
-                        <span class="fw-bold">${data.quantity}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Leverage</span>
-                        <span class="fw-bold">${data.leverage}x</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Status</span>
-                        <span>${statusBadge}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Current P&L</span>
-                        <span class="fw-bold ${currentPnL >= 0 ? 'text-success' : 'text-danger'}">
-                            ${currentPnL >= 0 ? '+' : ''}$${parseFloat(currentPnL).toFixed(2)}
-                        </span>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">User Trades</span>
-                        <span class="fw-bold">${data.user_trades_total}</span>
-                    </div>
-                    <div class="alert alert-warning border-0 mt-3 mb-0">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <small>Closing this position will also close all ${data.user_trades_total} associated user trades.</small>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="text-muted small mb-1">Symbol</div>
+                            <div class="fw-semibold">${data.symbol}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-muted small mb-1">Status</div>
+                            <div>${statusBadge}</div>
+                        </div>
+                        <div class="col-6 mt-3">
+                            <div class="text-muted small mb-1">Entry Price</div>
+                            <div class="fw-semibold">$${parseFloat(data.entry_price).toFixed(2)}</div>
+                        </div>
+                        <div class="col-6 mt-3">
+                            <div class="text-muted small mb-1">Current P&L</div>
+                            <div class="fw-semibold ${currentPnL >= 0 ? 'text-success' : 'text-danger'}">
+                                ${currentPnL >= 0 ? '+' : ''}$${parseFloat(currentPnL).toFixed(2)}
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -559,11 +575,72 @@ function closePosition(tradeId, symbol) {
             console.error('Error:', error);
             document.getElementById('closePositionSummary').innerHTML = `
                 <div class="card-body">
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        Failed to load position details. Please try again.
+                    <div class="alert alert-danger mb-0">Failed to load position details</div>
+                </div>
+            `;
+        });
+}
+
+// Show close all modal
+function showCloseAllModal() {
+    closeAllModal.show();
+}
+
+// Enable/disable close all button based on confirmation text
+document.getElementById('confirmCloseAll')?.addEventListener('input', function(e) {
+    const btn = document.getElementById('closeAllBtn');
+    btn.disabled = e.target.value !== 'CLOSE ALL';
+});
+
+// View trade details
+function viewTradeDetails(tradeId) {
+    const modal = new bootstrap.Modal(document.getElementById('tradeDetailsModal'));
+    modal.show();
+    
+    fetch(`/admin/trades/${tradeId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('tradeDetailsContent').innerHTML = `
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">Trade Information</h6>
+                        <dl class="row mb-0">
+                            <dt class="col-5 text-muted small">Symbol</dt>
+                            <dd class="col-7">${data.symbol}</dd>
+                            <dt class="col-5 text-muted small">Direction</dt>
+                            <dd class="col-7"><span class="badge bg-${data.type === 'long' ? 'success' : 'danger'}">${data.type.toUpperCase()}</span></dd>
+                            <dt class="col-5 text-muted small">Entry Price</dt>
+                            <dd class="col-7">$${parseFloat(data.entry_price).toFixed(2)}</dd>
+                            <dt class="col-5 text-muted small">Quantity</dt>
+                            <dd class="col-7">${parseFloat(data.quantity).toFixed(4)}</dd>
+                            <dt class="col-5 text-muted small">Leverage</dt>
+                            <dd class="col-7">${parseFloat(data.leverage).toFixed(1)}x</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3">Performance</h6>
+                        <dl class="row mb-0">
+                            <dt class="col-5 text-muted small">Take Profit</dt>
+                            <dd class="col-7 text-success">$${parseFloat(data.take_profit).toFixed(2)}</dd>
+                            <dt class="col-5 text-muted small">Stop Loss</dt>
+                            <dd class="col-7 text-danger">$${parseFloat(data.stop_loss).toFixed(2)}</dd>
+                            <dt class="col-5 text-muted small">Status</dt>
+                            <dd class="col-7"><span class="badge bg-${data.status === 'open' ? 'success' : 'secondary'}">${data.status.toUpperCase()}</span></dd>
+                            ${data.realized_pnl ? `
+                            <dt class="col-5 text-muted small">Realized P&L</dt>
+                            <dd class="col-7 fw-semibold ${parseFloat(data.realized_pnl) >= 0 ? 'text-success' : 'text-danger'}">
+                                ${parseFloat(data.realized_pnl) >= 0 ? '+' : ''}$${parseFloat(data.realized_pnl).toFixed(2)}
+                            </dd>
+                            ` : ''}
+                        </dl>
                     </div>
                 </div>
+            `;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('tradeDetailsContent').innerHTML = `
+                <div class="alert alert-danger">Failed to load trade details</div>
             `;
         });
 }
@@ -592,7 +669,7 @@ function previewTrade() {
     document.getElementById('previewContent').innerHTML = `
         <div class="text-center py-4">
             <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Calculating...</span>
+                <span class="visually-hidden">Calculating trade impact...</span>
             </div>
             <p class="text-muted mt-2">Fetching leverage information for ${symbol}...</p>
         </div>
@@ -704,96 +781,5 @@ function previewTrade() {
         `;
     });
 }
-
-// View trade details
-function viewTradeDetails(tradeId) {
-    fetch(`/admin/trades/${tradeId}/details`)
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('tradeDetailsContent').innerHTML = `
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="card border-0 bg-body-secondary">
-                            <div class="card-body">
-                                <h6 class="fw-bold mb-3">Trade Information</h6>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Symbol</span>
-                                    <span class="fw-bold">${data.symbol}</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Type</span>
-                                    <span class="badge bg-${data.type === 'long' ? 'success' : 'danger'}">
-                                        ${data.type.toUpperCase()}
-                                    </span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Entry Price</span>
-                                    <span class="fw-bold">$${parseFloat(data.entry_price).toLocaleString()}</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Take Profit</span>
-                                    <span class="text-success fw-bold">$${parseFloat(data.take_profit).toLocaleString()}</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Stop Loss</span>
-                                    <span class="text-danger fw-bold">$${parseFloat(data.stop_loss).toLocaleString()}</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Quantity</span>
-                                    <span class="fw-bold">${data.quantity}</span>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <span class="text-muted">Leverage</span>
-                                    <span class="fw-bold">${data.leverage}x</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card border-0 bg-body-secondary">
-                            <div class="card-body">
-                                <h6 class="fw-bold mb-3">Performance & Propagation</h6>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Status</span>
-                                    <span class="badge bg-${data.status === 'open' ? 'success' : 'secondary'}">
-                                        ${data.status.toUpperCase()}
-                                    </span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">P&L</span>
-                                    <span class="fw-bold ${data.realized_pnl >= 0 ? 'text-success' : 'text-danger'}">
-                                        ${data.realized_pnl >= 0 ? '+' : ''}$${parseFloat(data.realized_pnl || 0).toFixed(2)}
-                                    </span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">User Propagation</span>
-                                    <span class="fw-bold">${data.user_trades_successful}/${data.user_trades_total}</span>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="text-muted">Success Rate</span>
-                                    <span class="fw-bold text-success">${data.success_rate}%</span>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <span class="text-muted">Created</span>
-                                    <span class="fw-bold">${data.created_at}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            new bootstrap.Modal(document.getElementById('tradeDetailsModal')).show();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to load trade details');
-        });
-}
-
-// Enable close all button when confirmation text is typed
-document.getElementById('confirmCloseAll')?.addEventListener('input', function(e) {
-    const btn = document.getElementById('closeAllBtn');
-    btn.disabled = e.target.value !== 'CLOSE ALL';
-});
 </script>
 @endpush

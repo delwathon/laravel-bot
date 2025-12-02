@@ -8,6 +8,8 @@ signal_id should also be stored in positions table, so that when admin trade is 
 
 Limit and Market Order type in Signal generator, not all signals are market order signal
 
+On Trade page, limit order type fails for users as it attempts to execute as market
+
 Generate Now does not execute signal for admin. It must execute for admin first, only admin successful execution should propagate to users. If it fails for a particular user, it shouldn't break the execution for other users
 
 Signal Generator must obey system and signal settings/configuration, including auto-execution

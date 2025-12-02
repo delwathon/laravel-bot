@@ -2,8 +2,13 @@
 
 namespace App\Jobs;
 
+use App\Models\ExchangeAccount;
+use App\Models\Position;
 use App\Models\Setting;
 use App\Models\Signal;
+use App\Models\Trade;
+use App\Models\User;
+use App\Services\BybitService;
 use App\Services\SignalGeneratorService;
 use App\Services\TradePropagationService;
 use Illuminate\Bus\Queueable;
@@ -97,7 +102,7 @@ class GenerateSignalsJob implements ShouldQueue
             ]);
             
             // Generate signals with timeframe (remove 'm' suffix)
-            $timeframeValue = str_replace('m', '', $primaryTimeframe);
+            $timeframeValue = $primaryTimeframe;
             $signals = $signalGenerator->generateSignals($symbols, $timeframeValue, $minConfidence);
 
             if (empty($signals)) {
@@ -243,7 +248,7 @@ class GenerateSignalsJob implements ShouldQueue
         $positionSize = Setting::get('signal_position_size', 5);
         
         // Get admin account
-        $adminAccount = \App\Models\ExchangeAccount::getBybitAccount();
+        $adminAccount = ExchangeAccount::getBybitAccount();
         
         if (!$adminAccount) {
             Log::warning('No admin Bybit account configured. Executing only for users.');
@@ -251,7 +256,7 @@ class GenerateSignalsJob implements ShouldQueue
         }
 
         // Get admin user
-        $admin = \App\Models\User::where('is_admin', true)->first();
+        $admin = User::where('is_admin', true)->first();
         
         if (!$admin) {
             Log::warning('No admin user found. Executing only for users.');
@@ -259,7 +264,7 @@ class GenerateSignalsJob implements ShouldQueue
         }
 
         // Execute admin trade via TradeExecutionService
-        $bybit = new \App\Services\BybitService($adminAccount->api_key, $adminAccount->api_secret);
+        $bybit = new BybitService($adminAccount->api_key, $adminAccount->api_secret);
         
         try {
             // Get admin balance
@@ -277,7 +282,7 @@ class GenerateSignalsJob implements ShouldQueue
             $quantity = round($quantity, 3);
 
             // Create admin trade
-            $trade = \App\Models\Trade::create([
+            $trade = Trade::create([
                 'user_id' => $admin->id,
                 'signal_id' => $signal->id,
                 'exchange_account_id' => null,
@@ -316,7 +321,7 @@ class GenerateSignalsJob implements ShouldQueue
             ]);
 
             // Create position
-            \App\Models\Position::create([
+            Position::create([
                 'user_id' => $admin->id,
                 'trade_id' => $trade->id,
                 'exchange_account_id' => null,

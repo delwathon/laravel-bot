@@ -3,7 +3,8 @@
 namespace App\Services;
 
 use App\Models\Signal;
-use App\Models\AdminExchangeAccount;
+use App\Models\Setting;
+use App\Models\ExchangeAccount;
 use Illuminate\Support\Facades\Log;
 
 class SignalGeneratorService
@@ -20,7 +21,7 @@ class SignalGeneratorService
 
     protected function getAdminBybitService()
     {
-        $adminAccount = AdminExchangeAccount::getBybitAccount();
+        $adminAccount = ExchangeAccount::getBybitAccount();
         
         if (!$adminAccount) {
             throw new \Exception('No admin Bybit account configured. Please add one in settings.');
@@ -42,7 +43,7 @@ class SignalGeneratorService
                 $signal = $this->analyzeSymbol($symbol, $timeframe);
                 
                 if ($signal && $signal['confidence'] >= $minConfidence) {
-                    $signals[] = $this->createSignal($signal);
+                    $signals[] = $this->createSignal($signal, $timeframe);
                 }
             } catch (\Exception $e) {
                 Log::error("Failed to analyze {$symbol}: " . $e->getMessage());
@@ -345,16 +346,18 @@ class SignalGeneratorService
         return array_slice($swingHighs, -5);
     }
 
-    protected function createSignal($signalData)
+    protected function createSignal($signalData, $timeframe)
     {
         $riskReward = abs(($signalData['take_profit'] - $signalData['entry_price']) / 
                          ($signalData['entry_price'] - $signalData['stop_loss']));
+        
+        $expiry_time = Setting::get('signal_expiry', 30);
 
         return Signal::create([
             'symbol' => $signalData['symbol'],
             'exchange' => 'bybit',
             'type' => $signalData['type'],
-            'timeframe' => $this->timeframe . 'm',
+            'timeframe' => $timeframe,
             'pattern' => $signalData['pattern'],
             'confidence' => $signalData['confidence'],
             'entry_price' => $signalData['entry_price'],
@@ -363,7 +366,7 @@ class SignalGeneratorService
             'risk_reward_ratio' => $riskReward,
             'position_size_percent' => 5,
             'status' => 'active',
-            'expires_at' => now()->addMinutes(30),
+            'expires_at' => now()->addMinutes($expiry_time),
         ]);
     }
 }

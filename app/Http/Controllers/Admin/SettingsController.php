@@ -213,7 +213,7 @@ class SettingsController extends Controller
             'interval' => 'required|integer|min:5|max:240',
             'top_signals' => 'required|integer|min:1|max:20',
             'min_confidence' => 'required|integer|min:50|max:95',
-            'signal_expiry' => 'required|integer|min:5|max:120',
+            'signal_expiry' => 'required|integer|min:5|max:1440',
             
             // Trading Pairs
             'pairs' => 'nullable|array',

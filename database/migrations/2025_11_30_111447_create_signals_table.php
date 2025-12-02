@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('symbol'); // e.g., BTCUSDT
             $table->string('exchange')->default('bybit');
             $table->enum('type', ['long', 'short']);
-            $table->enum('timeframe', ['1m', '5m', '15m', '30m', '1h', '4h', '1d'])->default('15m');
+            $table->enum('timeframe', ['1', '5', '15', '30', '60', '240', 'D'])->default('240');
             
             // SMC Analysis Data
             $table->string('pattern'); // e.g., Order Block, FVG, Liquidity Sweep

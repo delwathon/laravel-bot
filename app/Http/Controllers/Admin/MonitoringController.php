@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Position;
+use App\Models\Setting;
 use App\Models\Trade;
 use App\Models\ExchangeAccount;
 use App\Services\BybitService;
@@ -524,7 +525,7 @@ class MonitoringController extends Controller
             return 'critical';
         }
 
-        $tradingEnabled = \App\Models\Setting::get('trading_enabled', true);
+        $tradingEnabled = Setting::get('trading_enabled', true);
         if (!$tradingEnabled) {
             return 'warning';
         }

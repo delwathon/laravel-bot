@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use App\Models\Trade;
 use App\Models\User;
 use App\Models\ExchangeAccount;
@@ -34,8 +35,8 @@ class TradeController extends Controller
         $stats = $this->calculateStats();
         
         // Get position size and leverage from settings
-        $positionSize = \App\Models\Setting::get('signal_position_size', 5);
-        $leverage = \App\Models\Setting::get('signal_leverage', 'Max');
+        $positionSize = Setting::get('signal_position_size', 5);
+        $leverage = Setting::get('signal_leverage', 'Max');
         
         // Get real admin balance
         $adminBalance = 0;
@@ -48,15 +49,15 @@ class TradeController extends Controller
                 $adminBalance = $bybit->getBalance();
                 
                 // If leverage is "Max", get the actual max for a sample symbol (ETHUSDT)
-                if (strtolower($leverage) === 'max') {
-                    try {
-                        $leverageNumeric = $bybit->getMaxLeverage('ETHUSDT');
-                    } catch (\Exception $e) {
-                        $leverageNumeric = 100; // Default fallback
-                    }
-                } else {
-                    $leverageNumeric = (int) $leverage;
-                }
+                // if (strtolower($leverage) === 'max') {
+                //     try {
+                //         $leverageNumeric = $bybit->getMaxLeverage('ETHUSDT');
+                //     } catch (\Exception $e) {
+                //         $leverageNumeric = 100; // Default fallback
+                //     }
+                // } else {
+                //     $leverageNumeric = (int) $leverage;
+                // }
             }
         } catch (\Exception $e) {
             \Log::error('Failed to fetch admin balance: ' . $e->getMessage());
@@ -78,7 +79,7 @@ class TradeController extends Controller
 
         try {
             // Get position size from settings (not from form)
-            $positionSize = \App\Models\Setting::get('signal_position_size', 5);
+            $positionSize = Setting::get('signal_position_size', 5);
 
             $results = $this->tradePropagation->propagateManualTrade(
                 $validated['symbol'],
@@ -340,8 +341,8 @@ class TradeController extends Controller
 
         try {
             // Get settings
-            $positionSize = \App\Models\Setting::get('signal_position_size', 5);
-            $leverageSetting = \App\Models\Setting::get('signal_leverage', 'Max');
+            $positionSize = Setting::get('signal_position_size', 5);
+            $leverageSetting = Setting::get('signal_leverage', 'Max');
             
             // Get admin account and balance
             $adminAccount = ExchangeAccount::getBybitAccount();

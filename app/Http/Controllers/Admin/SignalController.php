@@ -112,7 +112,7 @@ class SignalController extends Controller
         try {
             // Get settings
             $symbols = Setting::get('signal_pairs', ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT']);
-            $timeframe = str_replace('m', '', Setting::get('signal_primary_timeframe', '15m'));
+            $timeframe = Setting::get('signal_primary_timeframe', '15');
             $minConfidence = (int) Setting::get('signal_min_confidence', 70);
 
             $signals = $this->signalGenerator->generateSignals($symbols, $timeframe, $minConfidence);

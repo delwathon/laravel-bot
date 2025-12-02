@@ -28,9 +28,9 @@ class SettingsSeeder extends Seeder
             ['key' => 'signal_pairs', 'value' => json_encode(['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT']), 'group' => 'signal_generator', 'type' => 'array', 'description' => 'Trading pairs to monitor'],
             
             // Timeframes
-            ['key' => 'signal_primary_timeframe', 'value' => '15m', 'group' => 'signal_generator', 'type' => 'string', 'description' => 'Primary analysis timeframe'],
-            ['key' => 'signal_higher_timeframe', 'value' => '1h', 'group' => 'signal_generator', 'type' => 'string', 'description' => 'Higher timeframe for trend confirmation'],
-            ['key' => 'signal_secondary_timeframe', 'value' => '1h', 'group' => 'signal_generator', 'type' => 'string', 'description' => 'Secondary analysis timeframe (alias for higher_timeframe)'],
+            ['key' => 'signal_primary_timeframe', 'value' => '240', 'group' => 'signal_generator', 'type' => 'string', 'description' => 'Primary analysis timeframe'],
+            ['key' => 'signal_higher_timeframe', 'value' => 'D', 'group' => 'signal_generator', 'type' => 'string', 'description' => 'Higher timeframe for trend confirmation'],
+            ['key' => 'signal_secondary_timeframe', 'value' => 'D', 'group' => 'signal_generator', 'type' => 'string', 'description' => 'Secondary analysis timeframe (alias for higher_timeframe)'],
             
             // SMC Pattern Detection
             ['key' => 'signal_patterns', 'value' => json_encode(['order_block', 'fvg', 'bos', 'choch', 'liquidity_sweep', 'premium_discount']), 'group' => 'signal_generator', 'type' => 'array', 'description' => 'SMC patterns to detect'],

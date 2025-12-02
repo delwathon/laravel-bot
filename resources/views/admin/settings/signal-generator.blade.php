@@ -15,8 +15,8 @@
     
     $enabledPairs = $settings['signal_pairs'] ?? ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT'];
     
-    $primaryTimeframe = $settings['signal_primary_timeframe'] ?? '15m';
-    $higherTimeframe = $settings['signal_higher_timeframe'] ?? $settings['signal_secondary_timeframe'] ?? '1h';
+    $primaryTimeframe = $settings['signal_primary_timeframe'] ?? '15';
+    $higherTimeframe = $settings['signal_higher_timeframe'] ?? $settings['signal_secondary_timeframe'] ?? '60';
     
     $enabledPatterns = $settings['signal_patterns'] ?? ['order_block', 'fvg', 'bos', 'choch', 'liquidity_sweep', 'premium_discount'];
     
@@ -88,7 +88,7 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Signal Expiry Time (minutes)</label>
-                    <input type="number" class="form-control form-control-lg" name="signal_expiry" value="{{ $expiry }}" min="5" max="120">
+                    <input type="number" class="form-control form-control-lg" name="signal_expiry" value="{{ $expiry }}" min="5" max="1440">
                     <div class="form-text">Signals expire if not executed within this time</div>
                 </div>
             </div>
@@ -187,22 +187,22 @@
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Primary Timeframe</label>
                     <select class="form-select form-select-lg" name="primary_timeframe">
-                        <option value="5m" {{ $primaryTimeframe == '5m' ? 'selected' : '' }}>5 Minutes</option>
-                        <option value="15m" {{ $primaryTimeframe == '15m' ? 'selected' : '' }}>15 Minutes</option>
-                        <option value="30m" {{ $primaryTimeframe == '30m' ? 'selected' : '' }}>30 Minutes</option>
-                        <option value="1h" {{ $primaryTimeframe == '1h' ? 'selected' : '' }}>1 Hour</option>
-                        <option value="4h" {{ $primaryTimeframe == '4h' ? 'selected' : '' }}>4 Hours</option>
+                        <option value="5" {{ $primaryTimeframe == '5' ? 'selected' : '' }}>5 Minutes</option>
+                        <option value="15" {{ $primaryTimeframe == '15' ? 'selected' : '' }}>15 Minutes</option>
+                        <option value="30" {{ $primaryTimeframe == '30' ? 'selected' : '' }}>30 Minutes</option>
+                        <option value="60" {{ $primaryTimeframe == '60' ? 'selected' : '' }}>1 Hour</option>
+                        <option value="240" {{ $primaryTimeframe == '240' ? 'selected' : '' }}>4 Hours</option>
                     </select>
                     <div class="form-text">Main timeframe for signal generation</div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Higher Timeframe (HTF)</label>
                     <select class="form-select form-select-lg" name="higher_timeframe">
-                        <option value="15m" {{ $higherTimeframe == '15m' ? 'selected' : '' }}>15 Minutes</option>
-                        <option value="30m" {{ $higherTimeframe == '30m' ? 'selected' : '' }}>30 Minutes</option>
-                        <option value="1h" {{ $higherTimeframe == '1h' ? 'selected' : '' }}>1 Hour</option>
-                        <option value="4h" {{ $higherTimeframe == '4h' ? 'selected' : '' }}>4 Hours</option>
-                        <option value="1d" {{ $higherTimeframe == '1d' ? 'selected' : '' }}>1 Day</option>
+                        <option value="15" {{ $higherTimeframe == '15' ? 'selected' : '' }}>15 Minutes</option>
+                        <option value="30" {{ $higherTimeframe == '30' ? 'selected' : '' }}>30 Minutes</option>
+                        <option value="60" {{ $higherTimeframe == '60' ? 'selected' : '' }}>1 Hour</option>
+                        <option value="240" {{ $higherTimeframe == '240' ? 'selected' : '' }}>4 Hours</option>
+                        <option value="D" {{ $higherTimeframe == 'D' ? 'selected' : '' }}>1 Day</option>
                     </select>
                     <div class="form-text">Higher timeframe for trend confirmation</div>
                 </div>

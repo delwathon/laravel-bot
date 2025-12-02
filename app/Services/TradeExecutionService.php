@@ -7,6 +7,7 @@ use App\Models\Trade;
 use App\Models\Position;
 use App\Models\User;
 use App\Models\ExchangeAccount;
+use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -28,10 +29,10 @@ class TradeExecutionService
         }
 
         // Get position size percentage from settings
-        $positionSizePercent = \App\Models\Setting::get('signal_position_size', 5);
+        $positionSizePercent = Setting::get('signal_position_size', 5);
         
         // Get leverage from settings
-        $leverageSetting = \App\Models\Setting::get('signal_leverage', 'Max');
+        $leverageSetting = Setting::get('signal_leverage', 'Max');
         $leverage = $this->calculateLeverage($leverageSetting, $signal->symbol, $bybit);
 
         // Calculate quantity

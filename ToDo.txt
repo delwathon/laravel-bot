@@ -1,9 +1,27 @@
 There is need to update all of the following:
 
+Update Javascipt alert on admin trades page and signal generator page to use bootstrap 5
+
 The unrealized P&L percentage on the monitoring script table (Unrealized P&L column) should be leverage-aware: https://www.bybit.com/en/help-center/article/Profit-Loss-calculations-USDT-Contract/#B
 
-signal_id should also be stored in positions table, so that when admin trade is closed in the Admin Trade page (http://127.0.0.1:8000/admin/trades), it closes for all propagated users with same signal_id too.
+signal_id should also be stored in positions table, so that when admin trade is closed in the Admin Trade page (http://127.0.0.1:8000/admin/trades), it closes for all propagated users with same signal_id too. This is the best approach.
 
-Scheduled/background balance sync has failed to work. Fix things
+Limit and Market Order type in Signal generator, not all signals are market order signal
 
-Scheduled signal generator & Manual Generate Now button not working.
+Generate Now does not execute signal for admin. It must execute for admin first, only admin successful execution should propagate to users. If it fails for a particular user, it shouldn't break the execution for other users
+
+Signal Generator must obey system and signal settings/configuration, including auto-execution
+
+All Scheduled or Job features has failed to work including scheduled signal generation and balance syncing. Fix this
+
+When a trade is closed, ensure that the P&L stored is recalculated to exclude trade-fees
+
+Implement close all positions to also close for users, not only admin
+
+Updated admin dashboard implementation
+
+User email verification
+
+User subscription
+
+Implement partial profit taking and SL adjustment

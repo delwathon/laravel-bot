@@ -6,6 +6,7 @@ use App\Models\Signal;
 use App\Models\User;
 use App\Models\Trade;
 use App\Models\Position;
+use App\Models\Setting;
 use App\Models\ExchangeAccount;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,8 @@ class TradePropagationService
 
     public function propagateSignalToAllUsers(Signal $signal)
     {
+        Log::info($signal);
+
         $users = User::where('is_admin', false)
             ->whereHas('exchangeAccount', function($query) {
                 $query->where('is_active', true)->where('is_admin', false);
@@ -143,7 +146,7 @@ class TradePropagationService
             }
             
             // Get leverage from settings
-            $leverageSetting = \App\Models\Setting::get('signal_leverage', 'Max');
+            $leverageSetting = Setting::get('signal_leverage', 'Max');
             $leverage = $this->calculateLeverage($leverageSetting, $signal->symbol, $bybit);
 
             // Calculate position size

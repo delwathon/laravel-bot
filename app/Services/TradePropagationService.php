@@ -22,8 +22,6 @@ class TradePropagationService
 
     public function propagateSignalToAllUsers(Signal $signal)
     {
-        Log::info($signal);
-
         $users = User::where('is_admin', false)
             ->whereHas('exchangeAccount', function($query) {
                 $query->where('is_active', true)->where('is_admin', false);
@@ -73,7 +71,7 @@ class TradePropagationService
                 'symbol' => $symbol,
                 'exchange' => 'bybit',
                 'type' => $type,
-                'timeframe' => '15m',
+                'timeframe' => Setting::get('signal_primary_timeframe', '15'),
                 'pattern' => 'Manual Trade',
                 'confidence' => 100,
                 'entry_price' => $entryPrice,

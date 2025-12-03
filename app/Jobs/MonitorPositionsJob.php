@@ -16,17 +16,27 @@ class MonitorPositionsJob implements ShouldQueue
 
     public function __construct()
     {
-        //
+        Log::info('[MonitorPositionsJob] Job instance created');
     }
 
     public function handle(PositionMonitorService $monitorService)
     {
+        Log::info('[MonitorPositionsJob] Starting execution');
+        
         try {
+            Log::info('[MonitorPositionsJob] Calling PositionMonitorService->monitorAllPositions()');
+            
             $results = $monitorService->monitorAllPositions();
             
-            Log::info('Position monitoring completed', $results);
+            Log::info('[MonitorPositionsJob] Position monitoring completed', $results);
+            
         } catch (\Exception $e) {
-            Log::error('Position monitoring job failed: ' . $e->getMessage());
+            Log::error('[MonitorPositionsJob] Critical exception occurred', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
         }
     }
 }

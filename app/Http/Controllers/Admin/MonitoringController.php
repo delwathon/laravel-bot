@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Position;
 use App\Models\Setting;
+use App\Models\Signal;
 use App\Models\Trade;
 use App\Models\ExchangeAccount;
 use App\Services\BybitService;
@@ -743,6 +744,190 @@ class MonitoringController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to restart monitor: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get pending order details by signal ID
+     * 
+     * @param int $signalId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPendingOrderDetails($signalId)
+    {
+        try {
+            // Get all pending trades for this signal
+            $pendingTrades = Trade::where('signal_id', $signalId)
+                ->where('status', 'pending')
+                ->with(['user.exchangeAccount', 'signal'])
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            if ($pendingTrades->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No pending orders found for this signal.'
+                ], 404);
+            }
+
+            // Get signal details
+            $signal = Signal::find($signalId);
+            $firstTrade = $pendingTrades->first();
+
+            // Format the response
+            $orderDetails = [
+                'signal_id' => $signalId,
+                'signal' => [
+                    'pattern' => $signal->pattern ?? 'N/A',
+                    'timeframe' => $signal->timeframe ?? 'N/A',
+                    'confidence' => $signal->confidence ?? 0,
+                    'status' => $signal->status ?? 'active',
+                ],
+                'order' => [
+                    'symbol' => $firstTrade->symbol,
+                    'type' => $firstTrade->type,
+                    'order_type' => $firstTrade->order_type ?? 'Limit',
+                    'entry_price' => $firstTrade->entry_price,
+                    'stop_loss' => $firstTrade->stop_loss,
+                    'take_profit' => $firstTrade->take_profit,
+                    'leverage' => $firstTrade->leverage,
+                    'quantity' => $firstTrade->quantity,
+                    'created_at' => $firstTrade->created_at->format('Y-m-d H:i:s'),
+                    'exchange_order_id' => $firstTrade->exchange_order_id,
+                ],
+                'users' => $pendingTrades->map(function($trade) {
+                    return [
+                        'id' => $trade->user_id,
+                        'name' => $trade->user->name,
+                        'email' => $trade->user->email,
+                        'trade_id' => $trade->id,
+                        'exchange_order_id' => $trade->exchange_order_id,
+                        'exchange_connected' => $trade->user->exchangeAccount ? true : false,
+                        'quantity' => $trade->quantity,
+                        'created_at' => $trade->created_at->diffForHumans(),
+                    ];
+                })->toArray(),
+                'stats' => [
+                    'total_users' => $pendingTrades->count(),
+                    'total_quantity' => $pendingTrades->sum('quantity'),
+                    'pending_duration' => $firstTrade->created_at->diffForHumans(null, true),
+                    'admin_included' => $pendingTrades->where('user.role', 'admin')->count() > 0,
+                ]
+            ];
+
+            return response()->json([
+                'success' => true,
+                'order' => $orderDetails
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching pending order details: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch pending order details: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Cancel pending orders by signal ID
+     * 
+     * @param Request $request
+     * @param int $signalId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function cancelPendingOrders(Request $request, $signalId)
+    {
+        try {
+            // Get all pending trades for this signal
+            $pendingTrades = Trade::where('signal_id', $signalId)
+                ->where('status', 'pending')
+                ->with(['user.exchangeAccount'])
+                ->get();
+
+            if ($pendingTrades->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No pending orders found to cancel.'
+                ], 404);
+            }
+
+            $cancelledCount = 0;
+            $failedCount = 0;
+            $errors = [];
+
+            foreach ($pendingTrades as $trade) {
+                try {
+                    // Get user's exchange account
+                    $exchangeAccount = $trade->user->exchangeAccount;
+                    
+                    if (!$exchangeAccount) {
+                        $failedCount++;
+                        $errors[] = "User {$trade->user->name} has no exchange account";
+                        continue;
+                    }
+
+                    // Initialize Bybit service
+                    $bybit = new \App\Services\BybitService(
+                        $exchangeAccount->api_key,
+                        $exchangeAccount->api_secret,
+                        $exchangeAccount->testnet
+                    );
+
+                    // Cancel the order on Bybit
+                    if ($trade->exchange_order_id) {
+                        $result = $bybit->cancelOrder($trade->symbol, $trade->exchange_order_id);
+                        
+                        // Update trade status
+                        $trade->status = 'cancelled';
+                        $trade->closed_at = now();
+                        $trade->save();
+                        
+                        $cancelledCount++;
+                        
+                        \Log::info("Cancelled pending order for user {$trade->user->name}: {$trade->exchange_order_id}");
+                    } else {
+                        // No exchange order ID, just mark as cancelled
+                        $trade->status = 'cancelled';
+                        $trade->closed_at = now();
+                        $trade->save();
+                        
+                        $cancelledCount++;
+                    }
+
+                } catch (\Exception $e) {
+                    $failedCount++;
+                    $errors[] = "Failed to cancel for {$trade->user->name}: {$e->getMessage()}";
+                    \Log::error("Error cancelling order for trade {$trade->id}: " . $e->getMessage());
+                }
+            }
+
+            // Update signal status if all orders cancelled
+            if ($cancelledCount > 0 && $failedCount === 0) {
+                $signal = Signal::find($signalId);
+                if ($signal) {
+                    $signal->status = 'cancelled';
+                    $signal->save();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'cancelled' => $cancelledCount,
+                'failed' => $failedCount,
+                'errors' => $errors,
+                'message' => "Successfully cancelled {$cancelledCount} order(s)." . 
+                        ($failedCount > 0 ? " Failed: {$failedCount}" : '')
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error cancelling pending orders: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to cancel pending orders: ' . $e->getMessage()
             ], 500);
         }
     }

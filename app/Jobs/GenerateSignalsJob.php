@@ -62,6 +62,9 @@ class GenerateSignalsJob implements ShouldQueue
             $defaultPositionSize = (float) Setting::get('signal_position_size', 5.0);
             $defaultLeverage = Setting::get('signal_leverage', 'Max');
             
+            // Order Type
+            $orderType = Setting::get('signal_order_type', 'Market');
+            
             // Exchange Configuration
             $enabledExchanges = Setting::get('signal_exchanges', ['bybit']);
             
@@ -191,12 +194,13 @@ class GenerateSignalsJob implements ShouldQueue
                 foreach ($topSignals as $signal) {
                     try {
                         // Execute admin trade FIRST, then propagate to users
-                        $results = $this->executeSignalWithAdmin($signal, $tradePropagation);
+                        $results = $this->executeSignalWithAdmin($signal, $tradePropagation, $orderType);
                         
                         Log::info("Signal auto-executed", [
                             'signal_id' => $signal->id,
                             'symbol' => $signal->symbol,
                             'type' => $signal->type,
+                            'order_type' => $orderType,
                             'confidence' => $signal->confidence,
                             'admin_executed' => isset($results['admin_trade']),
                             'successful' => $results['successful'],
@@ -243,123 +247,34 @@ class GenerateSignalsJob implements ShouldQueue
     /**
      * Execute signal for admin first, then propagate to all users
      */
-    protected function executeSignalWithAdmin($signal, $tradePropagation)
+    protected function executeSignalWithAdmin($signal, $tradePropagation, $orderType = 'Market')
     {
         $positionSize = Setting::get('signal_position_size', 5);
         
-        // Get admin account
-        $adminAccount = ExchangeAccount::getBybitAccount();
+        // Execute admin trade FIRST using TradePropagationService
+        $adminResult = $tradePropagation->executeAdminTrade($signal, $positionSize, $orderType);
         
-        if (!$adminAccount) {
-            Log::warning('No admin Bybit account configured. Executing only for users.');
-            return $tradePropagation->propagateSignalToAllUsers($signal);
-        }
-
-        // Get admin user
-        $admin = User::where('is_admin', true)->first();
-        
-        if (!$admin) {
-            Log::warning('No admin user found. Executing only for users.');
-            return $tradePropagation->propagateSignalToAllUsers($signal);
-        }
-
-        // Execute admin trade via TradeExecutionService
-        $bybit = new BybitService($adminAccount->api_key, $adminAccount->api_secret);
-        
-        try {
-            // Get admin balance
-            $balance = $bybit->getBalance();
-            
-            if ($balance <= 0) {
-                Log::warning('Insufficient admin balance. Executing only for users.');
-                return $tradePropagation->propagateSignalToAllUsers($signal);
-            }
-
-            // Calculate quantity
-            $riskAmount = ($balance * $positionSize) / 100;
-            $stopLossDistance = abs($signal->entry_price - $signal->stop_loss);
-            $quantity = $riskAmount / $stopLossDistance;
-            $quantity = round($quantity, 3);
-
-            // Create admin trade
-            $trade = Trade::create([
-                'user_id' => $admin->id,
-                'signal_id' => $signal->id,
-                'exchange_account_id' => null,
-                'symbol' => $signal->symbol,
-                'exchange' => 'bybit',
-                'type' => $signal->type,
-                'entry_price' => $signal->entry_price,
-                'stop_loss' => $signal->stop_loss,
-                'take_profit' => $signal->take_profit,
-                'quantity' => $quantity,
-                'leverage' => 1,
-                'status' => 'pending',
-            ]);
-
-            // Execute on Bybit
-            $side = $signal->type === 'long' ? 'Buy' : 'Sell';
-            $orderResult = $bybit->placeOrder(
-                $signal->symbol,
-                $side,
-                $quantity,
-                'Market',
-                null,
-                $signal->stop_loss,
-                $signal->take_profit
-            );
-
-            if (!$orderResult || !isset($orderResult['orderId'])) {
-                throw new \Exception('Failed to place admin order on Bybit');
-            }
-
-            // Update trade
-            $trade->update([
-                'exchange_order_id' => $orderResult['orderId'],
-                'status' => 'open',
-                'opened_at' => now(),
-            ]);
-
-            // Create position
-            Position::create([
-                'user_id' => $admin->id,
-                'trade_id' => $trade->id,
-                'exchange_account_id' => null,
-                'symbol' => $signal->symbol,
-                'exchange' => 'bybit',
-                'side' => $signal->type,
-                'entry_price' => $signal->entry_price,
-                'current_price' => $signal->entry_price,
-                'quantity' => $quantity,
-                'leverage' => 1,
-                'stop_loss' => $signal->stop_loss,
-                'take_profit' => $signal->take_profit,
-                'is_active' => true,
-                'last_updated_at' => now(),
-            ]);
-
-            Log::info("Admin trade executed for auto-generated signal", [
-                'trade_id' => $trade->id,
-                'order_id' => $orderResult['orderId'],
-            ]);
-
-            // Now propagate to users
-            $userResults = $tradePropagation->propagateSignalToAllUsers($signal);
-
+        if (!$adminResult['success']) {
+            Log::warning('Admin trade failed, not propagating to users: ' . $adminResult['error']);
             return [
-                'admin_trade' => $trade,
-                'total' => $userResults['total'],
-                'successful' => $userResults['successful'],
-                'failed' => $userResults['failed'],
-                'errors' => $userResults['errors'],
+                'admin_trade' => null,
+                'total' => 0,
+                'successful' => 0,
+                'failed' => 0,
+                'errors' => [],
             ];
-
-        } catch (\Exception $e) {
-            Log::error("Failed to execute admin trade for signal {$signal->id}: " . $e->getMessage());
-            
-            // Still try to execute for users even if admin trade fails
-            return $tradePropagation->propagateSignalToAllUsers($signal);
         }
+
+        // Now propagate to users with same order type
+        $userResults = $tradePropagation->propagateSignalToAllUsers($signal, $orderType);
+
+        return [
+            'admin_trade' => $adminResult['trade'],
+            'total' => $userResults['total'],
+            'successful' => $userResults['successful'],
+            'failed' => $userResults['failed'],
+            'errors' => $userResults['errors'],
+        ];
     }
 
     public function failed(\Throwable $exception): void

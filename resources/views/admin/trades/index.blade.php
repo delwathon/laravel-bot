@@ -313,14 +313,14 @@
                         </td>
                         <td class="px-4 text-end">
                             <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="viewTradeDetails({{ $trade->id }})" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
                                 @if($trade->status === 'open')
                                     <button class="btn btn-outline-danger" onclick="closePosition({{ $trade->id }}, '{{ $trade->symbol }}')" title="Close Position">
                                         <i class="bi bi-x-circle"></i>
                                     </button>
                                 @endif
-                                <button class="btn btn-outline-primary" onclick="viewTradeDetails({{ $trade->id }})" title="View Details">
-                                    <i class="bi bi-eye"></i>
-                                </button>
                             </div>
                         </td>
                     </tr>
@@ -707,6 +707,19 @@ function previewTrade() {
 
 // View trade details
 function viewTradeDetails(tradeId) {
+    const modal = new bootstrap.Modal(document.getElementById('tradeDetailsModal'));
+    
+    document.getElementById('tradeDetailsContent').innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted mt-3">Loading trade details...</p>
+        </div>
+    `;
+    
+    modal.show();
+    
     fetch(`/admin/trades/${tradeId}/details`)
         .then(response => response.json())
         .then(data => {
@@ -755,7 +768,7 @@ function viewTradeDetails(tradeId) {
                                 <h6 class="fw-bold mb-3">Performance & Propagation</h6>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="text-muted">Status</span>
-                                    <span class="badge bg-${data.status === 'open' ? 'success' : 'secondary'}">
+                                    <span class="badge bg-${data.status === 'open' ? 'success' : data.status === 'pending' ? 'warning' : 'secondary'}">
                                         ${data.status.toUpperCase()}
                                     </span>
                                 </div>
@@ -782,11 +795,15 @@ function viewTradeDetails(tradeId) {
                     </div>
                 </div>
             `;
-            new bootstrap.Modal(document.getElementById('tradeDetailsModal')).show();
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Failed to load trade details');
+            document.getElementById('tradeDetailsContent').innerHTML = `
+                <div class="alert alert-danger border-0 mb-0">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Failed to load trade details. Please try again.
+                </div>
+            `;
         });
 }
 

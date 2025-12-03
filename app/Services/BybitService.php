@@ -230,16 +230,16 @@ class BybitService
             
             // Return close info including P&L
             return [
-                'orderId' => $closeResult['orderId'] ?? null,
-                'closedPnl' => $unrealizedPnl, // This becomes realized after close
-                'closedQty' => $qty,
+                'result' => $closeResult,
+                'unrealized_pnl' => $unrealizedPnl,
+                'qty' => $qty,
             ];
         } catch (\Exception $e) {
-            Log::error('Failed to close Bybit position: ' . $e->getMessage());
+            Log::error('Failed to close position: ' . $e->getMessage());
             throw $e;
         }
     }
-    
+
     public function getClosedPnL($symbol)
     {
         try {
@@ -247,15 +247,14 @@ class BybitService
             $params = [
                 'category' => 'linear',
                 'symbol' => $symbol,
-                'limit' => 1, // Get most recent closed position
+                'limit' => 1,
             ];
             
             $response = $this->signedRequest('GET', '/v5/position/closed-pnl', $params, $timestamp);
             
-            $closedPositions = $response['result']['list'] ?? [];
-            
-            if (!empty($closedPositions)) {
-                return (float) ($closedPositions[0]['closedPnl'] ?? 0);
+            if (isset($response['result']['list'][0])) {
+                $closedPnl = $response['result']['list'][0];
+                return (float) ($closedPnl['closedPnl'] ?? 0);
             }
             
             return 0;
@@ -284,6 +283,13 @@ class BybitService
         }
     }
 
+    /**
+     * Get order status from Bybit (real-time orders)
+     * 
+     * @param string $symbol
+     * @param string $orderId
+     * @return array|null Order details with status
+     */
     public function getOrderStatus($symbol, $orderId)
     {
         try {
@@ -296,10 +302,56 @@ class BybitService
             
             $response = $this->signedRequest('GET', '/v5/order/realtime', $params, $timestamp);
             
-            return $response['result']['list'][0] ?? null;
+            if (isset($response['result']['list'][0])) {
+                return $response['result']['list'][0];
+            }
+            
+            // If not found in real-time orders, check history
+            Log::debug("Order {$orderId} not found in real-time orders, checking history...");
+            return $this->getOrderHistory($symbol, $orderId);
+            
         } catch (\Exception $e) {
-            Log::error('Failed to get order status: ' . $e->getMessage());
-            throw $e;
+            Log::error("Failed to get order status for {$orderId}: " . $e->getMessage());
+            
+            // Try history as fallback
+            try {
+                return $this->getOrderHistory($symbol, $orderId);
+            } catch (\Exception $historyError) {
+                Log::error("Failed to get order from history: " . $historyError->getMessage());
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Get order history (completed orders)
+     * 
+     * @param string $symbol
+     * @param string $orderId
+     * @return array|null Order details from history
+     */
+    public function getOrderHistory($symbol, $orderId)
+    {
+        try {
+            $timestamp = round(microtime(true) * 1000);
+            $params = [
+                'category' => 'linear',
+                'symbol' => $symbol,
+                'orderId' => $orderId,
+            ];
+            
+            $response = $this->signedRequest('GET', '/v5/order/history', $params, $timestamp);
+            
+            if (isset($response['result']['list'][0])) {
+                return $response['result']['list'][0];
+            }
+            
+            Log::warning("Order {$orderId} not found in history for symbol {$symbol}");
+            return null;
+            
+        } catch (\Exception $e) {
+            Log::error("Failed to get order history for {$orderId}: " . $e->getMessage());
+            return null;
         }
     }
 

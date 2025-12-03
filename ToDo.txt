@@ -27,3 +27,12 @@ User email verification
 User subscription
 
 Implement partial profit taking and SL adjustment
+
+
+I need to be able to close pending limit orders as an admin. And when i do, it closes for all other users too.
+
+Also, when a pending limit order/signal is expired as per teh configured time, i need that order closed for admin and all other users too
+
+Balance Sync Job and Scheduled signal generator isn't working despite running the command php artisan queue:work
+
+I ounlt need implementation scripts, no need for all the MD files.

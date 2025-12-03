@@ -160,30 +160,14 @@
             @foreach($recentErrors->take(5) as $error)
             <div class="list-group-item">
                 <div class="d-flex justify-content-between align-items-start">
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center mb-2">
-                            @if($error['severity'] === 'critical')
-                                <span class="badge bg-danger me-2">Critical</span>
-                            @elseif($error['severity'] === 'error')
-                                <span class="badge bg-danger me-2">Error</span>
-                            @else
-                                <span class="badge bg-warning me-2">Warning</span>
-                            @endif
-                            <small class="text-muted">{{ $error['timestamp']->diffForHumans() }}</small>
-                        </div>
-                        <div class="fw-semibold">{{ $error['message'] }}</div>
-                        <div class="small text-muted mt-1">Type: {{ ucwords(str_replace('_', ' ', $error['type'])) }}</div>
+                    <div>
+                        <strong>{{ $error['type'] }}</strong>
+                        <p class="mb-1 text-muted small">{{ $error['message'] }}</p>
+                        <small class="text-muted">{{ $error['time'] }}</small>
                     </div>
-                    <div class="btn-group btn-group-sm">
-                        @if(isset($error['position_id']))
-                            <button class="btn btn-outline-primary" onclick="showPositionDetails({{ $error['position_id'] }})">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                        @endif
-                        <button class="btn btn-sm btn-outline-secondary" onclick="showDismissAlert('{{ $error['type'] }}', this)">
-                            <i class="bi bi-x"></i>
-                        </button>
-                    </div>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="showDismissAlert('{{ $error['type'] }}')">
+                        <i class="bi bi-x"></i>
+                    </button>
                 </div>
             </div>
             @endforeach
@@ -301,7 +285,7 @@ $pendingOrders = \App\Models\Trade::where('status', 'pending')
                                 <span class="small text-warning fw-semibold">Awaiting Fill</span>
                             </div>
                         </td>
-                        <td class="px-4 text-end">
+                        <td class="px-4">
                             <div class="btn-group">
                                 <button class="btn btn-sm btn-outline-info" onclick="showPendingOrderDetails({{ $order['signal_id'] }})" title="View Details">
                                     <i class="bi bi-eye"></i>
@@ -326,124 +310,95 @@ $pendingOrders = \App\Models\Trade::where('status', 'pending')
 </div>
 @endif
 
-<!-- Active Positions Table -->
+<!-- Active Positions -->
 <div class="card border-0 shadow-sm">
     <div class="card-header bg-transparent border-0 p-4">
         <div class="d-flex justify-content-between align-items-center">
-            <h5 class="fw-bold mb-0">
-                <i class="bi bi-activity me-2"></i>Active Positions Monitor
-                <span class="badge bg-success bg-opacity-10 text-success ms-2">
-                    <i class="bi bi-broadcast-pin"></i> LIVE DATA
-                </span>
-            </h5>
+            <div>
+                <h5 class="fw-bold mb-1">Active Positions</h5>
+                <p class="text-muted small mb-0">Real-time monitoring of open positions</p>
+            </div>
             <div class="d-flex gap-2">
-                <span class="badge bg-primary" id="live-indicator">
-                    <i class="bi bi-circle-fill" style="font-size: 6px;"></i> LIVE
-                </span>
-                <span class="text-muted small">Auto-refresh: <span id="countdown">10</span>s</span>
+                <!-- Filters and sorting remain the same -->
             </div>
         </div>
-        <small class="text-muted">Prices updated directly from Bybit API in real-time</small>
     </div>
+    
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-body-secondary">
                     <tr>
-                        <th class="px-4 py-3 fw-semibold">User</th>
-                        <th class="py-3 fw-semibold">Symbol</th>
-                        <th class="py-3 fw-semibold">Side</th>
-                        <th class="py-3 fw-semibold">Entry</th>
-                        <th class="py-3 fw-semibold">Current</th>
-                        <th class="py-3 fw-semibold">TP / SL</th>
-                        <th class="py-3 fw-semibold">Unrealized P&L</th>
-                        <th class="py-3 fw-semibold">Status</th>
-                        <th class="py-3 fw-semibold text-end">Actions</th>
+                        <th class="border-0 px-4 py-3 fw-semibold">User</th>
+                        <th class="border-0 py-3 fw-semibold">Symbol</th>
+                        <th class="border-0 py-3 fw-semibold">Side</th>
+                        <th class="border-0 py-3 fw-semibold">Entry</th>
+                        <th class="border-0 py-3 fw-semibold">Current</th>
+                        <th class="border-0 py-3 fw-semibold">Unrealized P&L</th>
+                        <th class="border-0 py-3 fw-semibold">Progress</th>
+                        <th class="border-0 py-3 fw-semibold">Health</th>
+                        <th class="border-0 px-4 py-3 fw-semibold text-end">Actions</th>
                     </tr>
                 </thead>
-                <tbody id="positions-table-body">
+                <tbody>
                     @forelse($positions as $position)
-                    <tr data-position-id="{{ $position->id }}">
+                    <tr>
                         <td class="px-4">
                             <div class="d-flex align-items-center">
-                                <div class="bg-info bg-opacity-10 rounded-circle p-2 me-2 flex-shrink-0">
-                                    <i class="bi bi-person-fill text-info"></i>
+                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                    <i class="bi bi-person-fill text-primary"></i>
                                 </div>
                                 <div>
                                     <div class="fw-semibold">{{ $position->user->name }}</div>
-                                    <small class="text-muted">#{{ $position->user->id }}</small>
+                                    <div class="text-muted small">{{ $position->user->email }}</div>
                                 </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">{{ $position->symbol }}</div>
+                            <div class="small text-muted">{{ $position->leverage }}x</div>
+                        </td>
+                        <td>
+                            <span class="badge {{ $position->side === 'long' ? 'bg-success' : 'bg-danger' }} bg-opacity-10 {{ $position->side === 'long' ? 'text-success' : 'text-danger' }}">
+                                {{ strtoupper($position->side) }}
+                            </span>
+                        </td>
+                        <td>${{ number_format($position->entry_price, 2) }}</td>
+                        <td>${{ number_format($position->live_current_price, 2) }}</td>
+                        <td>
+                            <div class="fw-semibold {{ $position->live_unrealized_pnl >= 0 ? 'text-success' : 'text-danger' }}">
+                                {{ $position->live_unrealized_pnl >= 0 ? '+' : '' }}${{ number_format($position->live_unrealized_pnl, 2) }}
+                            </div>
+                            <div class="small text-muted">
+                                {{ $position->live_unrealized_pnl_percent >= 0 ? '+' : '' }}{{ number_format($position->live_unrealized_pnl_percent, 2) }}%
                             </div>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
-                                <div class="bg-{{ $position->side === 'long' ? 'success' : 'danger' }} bg-opacity-10 p-2 rounded-circle me-2">
-                                    <i class="bi bi-coin text-{{ $position->side === 'long' ? 'success' : 'danger' }}"></i>
+                                <div class="progress flex-grow-1" style="height: 8px; width: 60px;">
+                                    <div class="progress-bar {{ $position->live_unrealized_pnl >= 0 ? 'bg-success' : 'bg-danger' }}" 
+                                         style="width: {{ min(abs($position->progress_to_tp ?? 0), 100) }}%"></div>
                                 </div>
-                                <div>
-                                    <div class="fw-bold">{{ $position->symbol }}</div>
-                                </div>
+                                <span class="ms-2 small">{{ number_format($position->progress_to_tp ?? 0, 0) }}%</span>
                             </div>
                         </td>
                         <td>
-                            <span class="badge bg-{{ $position->side === 'long' ? 'success' : 'danger' }} bg-opacity-10 text-{{ $position->side === 'long' ? 'success' : 'danger' }}">
-                                <i class="bi bi-arrow-{{ $position->side === 'long' ? 'up' : 'down' }}-right me-1"></i>{{ strtoupper($position->side) }}
-                            </span>
+                            @if($position->health_status['status'] === 'healthy')
+                                <span class="badge bg-success bg-opacity-10 text-success">
+                                    <i class="bi bi-check-circle"></i> Healthy
+                                </span>
+                            @elseif($position->health_status['status'] === 'warning')
+                                <span class="badge bg-warning bg-opacity-10 text-warning">
+                                    <i class="bi bi-exclamation-triangle"></i> Warning
+                                </span>
+                            @else
+                                <span class="badge bg-danger bg-opacity-10 text-danger">
+                                    <i class="bi bi-x-circle"></i> Critical
+                                </span>
+                            @endif
                         </td>
-                        <td>
-                            <div class="fw-semibold">${{ number_format($position->entry_price, 2) }}</div>
-                            <small class="text-muted">{{ $position->time_ago }}</small>
-                        </td>
-                        <td>
-                            <div class="fw-semibold text-{{ $position->unrealized_pnl >= 0 ? 'success' : 'danger' }}">
-                                ${{ number_format($position->current_price, 2) }}
-                                @if(isset($position->is_live_data) && $position->is_live_data)
-                                    <i class="bi bi-broadcast-pin text-success ms-1" title="LIVE from Bybit" style="font-size: 10px;"></i>
-                                @else
-                                    <i class="bi bi-database text-muted ms-1" title="Cached data" style="font-size: 10px;"></i>
-                                @endif
-                            </div>
-                            <small class="text-{{ $position->unrealized_pnl >= 0 ? 'success' : 'danger' }}">
-                                {{ $position->unrealized_pnl >= 0 ? '+' : '' }}{{ number_format($position->unrealized_pnl_percent, 2) }}%
-                            </small>
-                        </td>
-                        <td>
-                            <div class="small">
-                                <div class="text-success">TP: ${{ number_format($position->take_profit, 2) }}</div>
-                                <div class="text-danger">SL: ${{ number_format($position->stop_loss, 2) }}</div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="text-{{ $position->unrealized_pnl >= 0 ? 'success' : 'danger' }} fw-bold">
-                                {{ $position->unrealized_pnl >= 0 ? '+' : '' }}${{ number_format($position->unrealized_pnl, 2) }}
-                                <small class="text-{{ $position->unrealized_pnl >= 0 ? 'success' : 'danger' }}">
-                                    ({{ $position->unrealized_pnl >= 0 ? '+' : '' }}{{ number_format($position->unrealized_pnl_percent * $position->leverage, 2) }}%)
-                                </small>
-                            </div>
-                            <div class="progress mt-1" style="height: 4px;">
-                                <div class="progress-bar bg-{{ $position->unrealized_pnl >= 0 ? 'success' : 'danger' }}" 
-                                     style="width: {{ abs($position->progress_to_tp) }}%"></div>
-                            </div>
-                            <small class="text-muted">{{ round($position->progress_to_tp) }}% to TP</small>
-                        </td>
-                        <td>
-                            @php
-                                $health = $position->health_status;
-                                $statusColors = [
-                                    'healthy' => 'success',
-                                    'active' => 'primary',
-                                    'warning' => 'warning',
-                                    'critical' => 'danger',
-                                ];
-                                $color = $statusColors[$health['status']] ?? 'secondary';
-                            @endphp
-                            <span class="badge bg-{{ $color }} bg-opacity-10 text-{{ $color }} border border-{{ $color }} border-opacity-25">
-                                <i class="bi bi-circle-fill" style="font-size: 6px;"></i> {{ ucfirst($health['status']) }}
-                            </span>
-                            <div class="small text-muted">{{ $health['message'] }}</div>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
+                        <td class="px-4">
+                            <div class="btn-group">
                                 <button class="btn btn-sm btn-outline-primary" onclick="showPositionDetails({{ $position->id }})" title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </button>
@@ -456,10 +411,8 @@ $pendingOrders = \App\Models\Trade::where('status', 'pending')
                     @empty
                     <tr>
                         <td colspan="9" class="text-center py-5">
-                            <div class="text-muted">
-                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                                <p class="mb-0">No active positions found</p>
-                            </div>
+                            <i class="bi bi-inbox fs-1 text-muted d-block mb-3"></i>
+                            <p class="text-muted">No active positions to monitor.</p>
                         </td>
                     </tr>
                     @endforelse
@@ -468,15 +421,9 @@ $pendingOrders = \App\Models\Trade::where('status', 'pending')
         </div>
     </div>
 
-    <!-- Pagination -->
     @if($positions->hasPages())
     <div class="card-footer bg-transparent border-0 p-4">
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="text-muted small">
-                Showing {{ $positions->firstItem() }} to {{ $positions->lastItem() }} of {{ $positions->total() }} active positions
-            </div>
-            {{ $positions->links() }}
-        </div>
+        {{ $positions->links() }}
     </div>
     @endif
 </div>
@@ -602,7 +549,7 @@ $pendingOrders = \App\Models\Trade::where('status', 'pending')
     // Auto-refresh settings
     let autoRefreshInterval;
     let countdownInterval;
-    const refreshTime = 10; // seconds
+    const refreshTime = 30; // seconds
     let countdown = refreshTime;
 
     // Initialize Bootstrap toast
@@ -796,7 +743,7 @@ $pendingOrders = \App\Models\Trade::where('status', 'pending')
                                             <td class="text-muted">Unrealized P&L:</td>
                                             <td class="fw-bold text-${pnlClass}">
                                                 ${position.unrealized_pnl >= 0 ? '+' : ''}$${parseFloat(position.unrealized_pnl).toFixed(2)}
-                                                (${position.unrealized_pnl_percent >= 0 ? '+' : ''}${parseFloat(position.unrealized_pnl_percent * position.leverage).toFixed(2)}%)
+                                                (${position.unrealized_pnl_percent >= 0 ? '+' : ''}${parseFloat(position.unrealized_pnl_percent).toFixed(2)}%)
                                             </td>
                                         </tr>
                                         <tr>
@@ -1250,15 +1197,14 @@ $pendingOrders = \App\Models\Trade::where('status', 'pending')
     }
 
     // Dismiss alert
-    function showDismissAlert(alertType, buttonElement) {
-        const listItem = buttonElement ? buttonElement.closest('.list-group-item') : null;
-        
+    function showDismissAlert(alertType) {
         showConfirmModal(
             'Dismiss Alert',
             '<p>Are you sure you want to dismiss this alert?</p>',
             'Dismiss',
             'btn-secondary',
             function() {
+                const listItem = event.target.closest('.list-group-item');
                 if (listItem) {
                     listItem.style.transition = 'opacity 0.3s';
                     listItem.style.opacity = '0';
@@ -1271,116 +1217,34 @@ $pendingOrders = \App\Models\Trade::where('status', 'pending')
         );
     }
 
-    // ============================================
-    // AUTO-REFRESH FUNCTIONS (SYNCHRONIZED)
-    // ============================================
-
-    // Start auto-refresh with synchronized countdown
+    // Auto-refresh functionality
     function startAutoRefresh() {
-        if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-        if (countdownInterval) clearInterval(countdownInterval);
+        countdown = refreshTime;
+        updateCountdown();
         
-        countdown = refreshTime; // Start at 10
+        autoRefreshInterval = setInterval(() => {
+            location.reload();
+        }, refreshTime * 1000);
         
-        // Update display immediately
-        updateCountdownDisplay();
-        
-        // Single interval that handles both countdown AND refresh
         countdownInterval = setInterval(() => {
             countdown--;
-            
-            // When countdown reaches 0, refresh IMMEDIATELY and reset
-            if (countdown <= 0) {
-                refreshPositionsTable();
-                countdown = refreshTime; // Reset to 10
-            }
-            
-            // Update display AFTER refresh check
-            updateCountdownDisplay();
-        }, 1000); // Run every second
+            updateCountdown();
+            if (countdown <= 0) countdown = refreshTime;
+        }, 1000);
     }
 
-    // Helper function to update countdown display
-    function updateCountdownDisplay() {
-        const countdownElement = document.getElementById('countdown');
-        if (countdownElement) {
-            countdownElement.textContent = countdown;
+    function updateCountdown() {
+        const countdownEl = document.getElementById('refreshCountdown');
+        if (countdownEl) {
+            countdownEl.textContent = countdown;
         }
-    }
-
-    // Refresh positions table
-    function refreshPositionsTable() {
-        console.log('Auto-refreshing positions...');
-        
-        const indicator = document.getElementById('live-indicator');
-        if (indicator) {
-            indicator.classList.add('pulse');
-        }
-        
-        const url = new URL(window.location.href);
-        fetch(url, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newTableBody = doc.querySelector('#positions-table-body');
-            
-            if (newTableBody) {
-                const currentTableBody = document.querySelector('#positions-table-body');
-                if (currentTableBody) {
-                    currentTableBody.innerHTML = newTableBody.innerHTML;
-                }
-            }
-            
-            setTimeout(() => {
-                if (indicator) {
-                    indicator.classList.remove('pulse');
-                }
-            }, 500);
-        })
-        .catch(error => {
-            console.error('Auto-refresh failed:', error);
-            // On error, still remove the pulse animation
-            if (indicator) {
-                indicator.classList.remove('pulse');
-            }
-        });
     }
 
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
-        // Add pulse animation CSS
-        addPulseAnimation();
-        
-        // Start auto-refresh
-        startAutoRefresh();
+        // Auto-refresh every 30 seconds
+        // startAutoRefresh();
     });
-
-    // ============================================
-    // UTILITY FUNCTIONS
-    // ============================================
-
-    // Add pulse animation CSS
-    function addPulseAnimation() {
-        if (!document.getElementById('pulse-animation-style')) {
-            const pulseStyle = document.createElement('style');
-            pulseStyle.id = 'pulse-animation-style';
-            pulseStyle.textContent = `
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.5; }
-                }
-                .pulse {
-                    animation: pulse 0.5s ease-in-out;
-                }
-            `;
-            document.head.appendChild(pulseStyle);
-        }
-    }
 
     // Clean up on page unload
     window.addEventListener('beforeunload', () => {

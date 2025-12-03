@@ -164,14 +164,29 @@ class SignalController extends Controller
                 return back()->with('error', 'Signal is not active and cannot be executed.');
             }
 
-            $results = $this->tradePropagation->propagateSignalToAllUsers($signal);
+            // Get order type from settings or default to Market
+            $orderType = Setting::get('signal_order_type', 'Market');
+            
+            // Execute admin trade FIRST
+            $adminResult = $this->tradePropagation->executeAdminTrade(
+                $signal, 
+                Setting::get('signal_position_size', 5),
+                $orderType
+            );
+            
+            if (!$adminResult['success']) {
+                throw new \Exception('Failed to execute admin trade: ' . $adminResult['error']);
+            }
+            
+            // Then propagate to users
+            $userResults = $this->tradePropagation->propagateSignalToAllUsers($signal, $orderType);
 
             $signal->update([
                 'status' => 'executed',
                 'executed_at' => now(),
             ]);
 
-            $message = "Signal executed: {$results['successful']} successful, {$results['failed']} failed out of {$results['total']} users.";
+            $message = "Signal executed: Admin + {$userResults['successful']} users successful, {$userResults['failed']} failed out of {$userResults['total']} users.";
 
             return redirect()->route('admin.signals.index')
                 ->with('success', $message);

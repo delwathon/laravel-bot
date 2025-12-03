@@ -98,6 +98,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/settings/signal-generator', [AdminSettingsController::class, 'updateSignalGenerator'])->name('settings.signal-generator.update');
     Route::get('/settings/system', [AdminSettingsController::class, 'system'])->name('settings.system');
     Route::put('/settings/system', [AdminSettingsController::class, 'updateSystem'])->name('settings.system.update');
+
+    // Pending Order Operations
+    Route::get('/monitoring/pending-orders/{signalId}/details', [MonitoringController::class, 'getPendingOrderDetails'])
+        ->name('admin.monitoring.pending-orders.details');
+    
+    Route::post('/monitoring/pending-orders/{signalId}/cancel', [MonitoringController::class, 'cancelPendingOrders'])
+        ->name('admin.monitoring.pending-orders.cancel');
 });
 
 // User Routes

@@ -8,6 +8,7 @@ use App\Jobs\MonitorPositionsJob;
 use App\Jobs\GenerateSignalsJob;
 use App\Jobs\ExpireSignalsJob;
 use App\Jobs\SyncUserBalancesJob;
+use App\Jobs\MonitorLimitOrdersJob;
 use App\Models\Setting;
 
 class Kernel extends ConsoleKernel
@@ -18,26 +19,51 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // ==========================================
-        // DYNAMIC SETTINGS LOADING
+        // DYNAMIC SETTINGS LOADING WITH FALLBACKS
         // ==========================================
         
-        // Signal Generator Settings
-        $signalInterval = (int) Setting::get('signal_interval', 15);
+        try {
+            // Signal Generator Settings
+            $signalInterval = (int) Setting::get('signal_interval', 15);
+            
+            // Trading Settings
+            $tradingEnabled = (bool) Setting::get('trading_enabled', true);
+            
+            // Monitoring Settings  
+            $monitorInterval = (int) Setting::get('monitor_interval', 1); // in minutes
+            
+            // Backup Settings
+            $backupEnabled = (bool) Setting::get('backup_auto_backup', false);
+            $backupFrequency = Setting::get('backup_frequency', 'daily');
+            $dataRetentionDays = (int) Setting::get('backup_data_retention', 365);
+            $logRetentionDays = (int) Setting::get('backup_log_retention', 90);
+            
+            // Notification Settings
+            $dailySummaryEnabled = (bool) Setting::get('notifications_daily_summary', true);
+        } catch (\Exception $e) {
+            // Fallback values if settings table doesn't exist or has issues
+            \Log::warning('Failed to load settings, using defaults: ' . $e->getMessage());
+            
+            $signalInterval = 15;
+            $tradingEnabled = true;
+            $monitorInterval = 1;
+            $backupEnabled = false;
+            $backupFrequency = 'daily';
+            $dataRetentionDays = 365;
+            $logRetentionDays = 90;
+            $dailySummaryEnabled = true;
+        }
+
+        // ==========================================
+        // CRITICAL: Monitor Limit Orders (ALWAYS RUNS)
+        // ==========================================
         
-        // Trading Settings
-        $tradingEnabled = (bool) Setting::get('trading_enabled', true);
-        
-        // Monitoring Settings  
-        $monitorInterval = (int) Setting::get('monitor_interval', 1); // in minutes
-        
-        // Backup Settings
-        $backupEnabled = (bool) Setting::get('backup_auto_backup', false);
-        $backupFrequency = Setting::get('backup_frequency', 'daily');
-        $dataRetentionDays = (int) Setting::get('backup_data_retention', 365);
-        $logRetentionDays = (int) Setting::get('backup_log_retention', 90);
-        
-        // Notification Settings
-        $dailySummaryEnabled = (bool) Setting::get('notifications_daily_summary', true);
+        // This MUST run every 2 minutes to check pending orders
+        $schedule->job(new MonitorLimitOrdersJob)
+            ->everyTwoMinutes()
+            ->name('monitor-limit-orders')
+            ->withoutOverlapping(2)
+            ->onOneServer();
 
         // ==========================================
         // CRITICAL: Position Monitoring (Dynamic Interval)
@@ -98,6 +124,23 @@ class Kernel extends ConsoleKernel
             ->onSuccess(function () {
                 \Log::info('Signal expiration check completed');
             });
+
+        // ==========================================
+        // Monitor Limit Orders (Every 2 Minutes)
+        // ==========================================
+        
+        if ($tradingEnabled) {
+            $schedule->job(new MonitorLimitOrdersJob)
+                ->everyTwoMinutes()
+                ->name('monitor-limit-orders')
+                ->withoutOverlapping(2)
+                ->onSuccess(function () {
+                    \Log::info('Limit order monitoring completed');
+                })
+                ->onFailure(function () {
+                    \Log::error('Limit order monitoring failed');
+                });
+        }
 
         // ==========================================
         // Balance Synchronization (Every 30 Minutes)

@@ -43,9 +43,17 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 
 // Admin Routes
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    
+
     // Dashboard
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    
+    // Real-time Stats Endpoint (AJAX)
+    Route::get('/dashboard/realtime-stats', [AdminDashboardController::class, 'getRealtimeStats'])
+        ->name('dashboard.realtime-stats');
+    
+    // Export Dashboard Data (Future Enhancement)
+    Route::post('/dashboard/export', [AdminDashboardController::class, 'exportDashboardData'])
+        ->name('dashboard.export');
     
     // User Management
     Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');

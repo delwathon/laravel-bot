@@ -91,18 +91,12 @@ class GenerateSignalsJob implements ShouldQueue
             }
             
             // ========================================
-            // Generate Signals
+            // Generate Signals (FIXED - NO configure() call)
             // ========================================
             
-            // Pass configuration to signal generator
-            $signalGenerator->configure([
-                'primary_timeframe' => $primaryTimeframe,
-                'higher_timeframe' => $higherTimeframe,
-                'enabled_patterns' => $enabledPatterns,
-                'lookback_periods' => $lookbackPeriods,
-                'pattern_strength' => $patternStrength,
-                'log_analysis' => $logAnalysis,
-            ]);
+            // NOTE: Removed $signalGenerator->configure() call as this method doesn't exist
+            // The SignalGeneratorService doesn't have a configure() method
+            // We pass parameters directly to generateSignals()
             
             // Generate signals with timeframe (remove 'm' suffix)
             $timeframeValue = $primaryTimeframe;

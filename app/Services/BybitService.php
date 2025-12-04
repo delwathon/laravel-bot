@@ -228,67 +228,24 @@ class BybitService
             
             $closeResult = $this->placeOrder($symbol, $closeSide, $qty, 'Market');
             
-            // Return close info including P&L
-            return [
-                'result' => $closeResult,
+            Log::info("Position closed for {$symbol}", [
                 'unrealized_pnl' => $unrealizedPnl,
                 'qty' => $qty,
-            ];
+            ]);
+            
+            return $closeResult;
         } catch (\Exception $e) {
             Log::error('Failed to close position: ' . $e->getMessage());
             throw $e;
         }
     }
 
-    public function getClosedPnL($symbol)
-    {
-        try {
-            $timestamp = round(microtime(true) * 1000);
-            $params = [
-                'category' => 'linear',
-                'symbol' => $symbol,
-                'limit' => 1,
-            ];
-            
-            $response = $this->signedRequest('GET', '/v5/position/closed-pnl', $params, $timestamp);
-            
-            if (isset($response['result']['list'][0])) {
-                $closedPnl = $response['result']['list'][0];
-                return (float) ($closedPnl['closedPnl'] ?? 0);
-            }
-            
-            return 0;
-        } catch (\Exception $e) {
-            Log::error('Failed to get closed P&L: ' . $e->getMessage());
-            return 0; // Return 0 instead of throwing to not break the flow
-        }
-    }
-
-    public function cancelOrder($symbol, $orderId)
-    {
-        try {
-            $timestamp = round(microtime(true) * 1000);
-            $params = [
-                'category' => 'linear',
-                'symbol' => $symbol,
-                'orderId' => $orderId,
-            ];
-            
-            $response = $this->signedRequest('POST', '/v5/order/cancel', $params, $timestamp);
-            
-            return $response['result'] ?? null;
-        } catch (\Exception $e) {
-            Log::error('Failed to cancel Bybit order: ' . $e->getMessage());
-            throw $e;
-        }
-    }
-
     /**
-     * Get order status from Bybit (real-time orders)
+     * Get order status (real-time and history)
      * 
      * @param string $symbol
      * @param string $orderId
-     * @return array|null Order details with status
+     * @return array|null
      */
     public function getOrderStatus($symbol, $orderId)
     {
@@ -300,14 +257,14 @@ class BybitService
                 'orderId' => $orderId,
             ];
             
+            // Try real-time orders first
             $response = $this->signedRequest('GET', '/v5/order/realtime', $params, $timestamp);
             
             if (isset($response['result']['list'][0])) {
                 return $response['result']['list'][0];
             }
             
-            // If not found in real-time orders, check history
-            Log::debug("Order {$orderId} not found in real-time orders, checking history...");
+            // If not in real-time, try history
             return $this->getOrderHistory($symbol, $orderId);
             
         } catch (\Exception $e) {
@@ -474,6 +431,65 @@ class BybitService
         } catch (\Exception $e) {
             Log::error('Failed to get current price: ' . $e->getMessage());
             throw $e;
+        }
+    }
+
+    /**
+     * Get all USDT perpetual trading pairs filtered by 24h volume
+     * 
+     * @param float $minVolume Minimum 24h turnover in USDT (default: 5000000)
+     * @return array Array of symbol names (e.g., ['BTCUSDT', 'ETHUSDT', ...])
+     */
+    public function getHighVolumeTradingPairs($minVolume = 5000000)
+    {
+        try {
+            $params = [
+                'category' => 'linear',
+            ];
+            
+            $response = Http::get($this->baseUrl . '/v5/market/tickers', $params);
+            
+            if (!$response->successful()) {
+                Log::error('Failed to fetch tickers from Bybit');
+                return [];
+            }
+            
+            $data = $response->json();
+            $tickers = $data['result']['list'] ?? [];
+            
+            $validPairs = [];
+            
+            foreach ($tickers as $ticker) {
+                $symbol = $ticker['symbol'] ?? '';
+                $turnover24h = (float) ($ticker['turnover24h'] ?? 0);
+                
+                // Filter for USDT pairs only and volume >= minVolume
+                if (str_ends_with($symbol, 'USDT') && $turnover24h >= $minVolume) {
+                    $validPairs[] = [
+                        'symbol' => $symbol,
+                        'volume' => $turnover24h,
+                        'price' => (float) ($ticker['lastPrice'] ?? 0),
+                    ];
+                }
+            }
+            
+            // Sort by volume descending
+            usort($validPairs, function($a, $b) {
+                return $b['volume'] <=> $a['volume'];
+            });
+            
+            // Return only symbol names
+            $symbols = array_map(function($pair) {
+                return $pair['symbol'];
+            }, $validPairs);
+            
+            Log::info("Fetched " . count($symbols) . " trading pairs with volume >= " . number_format($minVolume));
+            
+            return $symbols;
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to get high volume trading pairs: ' . $e->getMessage());
+            return [];
         }
     }
 

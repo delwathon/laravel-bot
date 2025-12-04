@@ -14,6 +14,7 @@ class Signal extends Model
         'symbol',
         'exchange',
         'type',
+        'order_type',
         'timeframe',
         'pattern',
         'confidence',
@@ -94,6 +95,14 @@ class Signal extends Model
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
+    }
+
+    /**
+     * Scope: Failed signals
+     */
+    public function scopeFailed($query)
+    {
+        return $query->where('status', 'failed');
     }
 
     /**

@@ -20,6 +20,85 @@ class TradePropagationService
         $this->tradeExecutionService = $tradeExecutionService;
     }
 
+    /**
+     * Execute trade for admin FIRST
+     * Returns success/failure - DON'T create any records if admin fails
+     */
+    public function executeAdminTrade(Signal $signal, $positionSizePercent = 5, $orderType = 'Market')
+    {
+        Log::info("[TradePropagationService] Executing admin trade for signal {$signal->id}");
+        
+        try {
+            // Get admin account
+            $adminAccount = ExchangeAccount::where('is_admin', true)
+                ->where('is_active', true)
+                ->first();
+            
+            if (!$adminAccount) {
+                return [
+                    'success' => false,
+                    'error' => 'No active admin account found',
+                    'trade' => null
+                ];
+            }
+            
+            $adminUser = $adminAccount->user;
+            
+            if (!$adminUser) {
+                return [
+                    'success' => false,
+                    'error' => 'Admin user not found',
+                    'trade' => null
+                ];
+            }
+            
+            Log::info("[TradePropagationService] Admin account found", [
+                'user_id' => $adminUser->id,
+                'account_id' => $adminAccount->id
+            ]);
+            
+            // Execute trade using TradeExecutionService
+            $result = $this->tradeExecutionService->executeTradeForUser($signal, $adminUser);
+            
+            if ($result['success']) {
+                Log::info("[TradePropagationService] Admin trade executed successfully", [
+                    'trade_id' => $result['trade']->id,
+                    'actual_price' => $result['actual_execution_price'] ?? $signal->entry_price
+                ]);
+                
+                return [
+                    'success' => true,
+                    'trade' => $result['trade'],
+                    'position' => $result['position'] ?? null,
+                    'error' => null
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'error' => $result['error'] ?? 'Unknown error',
+                    'trade' => null
+                ];
+            }
+            
+        } catch (\Exception $e) {
+            Log::error("[TradePropagationService] Admin trade execution exception", [
+                'signal_id' => $signal->id,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'trade' => null
+            ];
+        }
+    }
+
+    /**
+     * Propagate signal to all users (called ONLY after admin succeeds)
+     */
     public function propagateSignalToAllUsers(Signal $signal, $orderType = 'Market')
     {
         $users = User::where('is_admin', false)
@@ -41,13 +120,37 @@ class TradePropagationService
                 $results['successful']++;
             } catch (\Exception $e) {
                 $results['failed']++;
+                $errorMessage = $e->getMessage();
+                
                 $results['errors'][] = [
                     'user_id' => $user->id,
                     'user_name' => $user->name,
-                    'error' => $e->getMessage(),
+                    'error' => $errorMessage,
                 ];
                 
-                Log::error("Failed to propagate signal to user {$user->id}: " . $e->getMessage());
+                Log::error("Failed to propagate signal to user {$user->id}: " . $errorMessage);
+                
+                // Create failed trade record with failure reason
+                try {
+                    Trade::create([
+                        'user_id' => $user->id,
+                        'signal_id' => $signal->id,
+                        'exchange_account_id' => $user->exchangeAccount->id ?? null,
+                        'symbol' => $signal->symbol,
+                        'exchange' => 'bybit',
+                        'type' => $signal->type,
+                        'order_type' => $orderType,
+                        'entry_price' => $signal->entry_price,
+                        'stop_loss' => $signal->stop_loss,
+                        'take_profit' => $signal->take_profit,
+                        'quantity' => 0,
+                        'leverage' => 1,
+                        'status' => 'failed',
+                        'failure_reason' => $errorMessage,
+                    ]);
+                } catch (\Exception $createException) {
+                    Log::error("Failed to create failed trade record for user {$user->id}: " . $createException->getMessage());
+                }
             }
         }
 
@@ -100,6 +203,7 @@ class TradePropagationService
                 'symbol' => $signal->symbol,
                 'exchange' => 'bybit',
                 'type' => $signal->type,
+                'order_type' => $orderType,
                 'entry_price' => $signal->entry_price,
                 'stop_loss' => $signal->stop_loss,
                 'take_profit' => $signal->take_profit,
@@ -118,8 +222,8 @@ class TradePropagationService
                 $signal->symbol,
                 $side,
                 $quantity,
-                $orderType,  // Use the specified order type
-                $limitPrice,  // Pass limit price for Limit orders
+                $orderType,
+                $limitPrice,
                 $signal->stop_loss,
                 $signal->take_profit,
                 $leverage
@@ -130,21 +234,20 @@ class TradePropagationService
             }
 
             $orderId = $orderResult['orderId'];
-            Log::info("Order placed for user {$user->id}: Order ID {$orderId}, Type: {$orderType}");
+            Log::info("Order placed for user {$user->id}: Order ID {$orderId}");
 
-            // Handle execution price based on order type
             if ($orderType === 'Market') {
-                // For Market orders: Wait for fill and get actual execution price
+                // For Market orders: Get actual execution price
                 $actualExecutionPrice = $bybit->waitForOrderFillAndGetPrice($signal->symbol, $orderId, 10, 500);
                 
                 if ($actualExecutionPrice === null || $actualExecutionPrice <= 0) {
                     Log::warning("Could not get execution price for order {$orderId}, falling back to signal entry price");
-                    $actualExecutionPrice = $signal->entry_price; // Fallback
+                    $actualExecutionPrice = $signal->entry_price;
                 }
 
                 Log::info("Actual execution price for user {$user->id}: {$actualExecutionPrice}");
 
-                // Update trade with ACTUAL execution price
+                // Update trade with actual execution price and create position
                 $trade->update([
                     'exchange_order_id' => $orderId,
                     'entry_price' => $actualExecutionPrice,
@@ -152,8 +255,8 @@ class TradePropagationService
                     'opened_at' => now(),
                 ]);
 
-                // Create active position
-                $position = Position::create([
+                // Create position immediately for Market orders
+                Position::create([
                     'user_id' => $user->id,
                     'trade_id' => $trade->id,
                     'exchange_account_id' => $exchangeAccount->id,
@@ -174,7 +277,7 @@ class TradePropagationService
                 // For Limit orders: Keep as pending until filled
                 $trade->update([
                     'exchange_order_id' => $orderId,
-                    'status' => 'pending', // Stays pending until filled
+                    'status' => 'pending',
                 ]);
 
                 Log::info("Limit order placed for user {$user->id}, awaiting fill");
@@ -202,6 +305,7 @@ class TradePropagationService
             if (isset($trade)) {
                 $trade->update([
                     'status' => 'failed',
+                    'failure_reason' => $e->getMessage(),
                 ]);
             }
 
@@ -219,6 +323,7 @@ class TradePropagationService
                 'symbol' => $symbol,
                 'exchange' => 'bybit',
                 'type' => $type,
+                'order_type' => $orderType,
                 'timeframe' => Setting::get('signal_primary_timeframe', '15'),
                 'pattern' => 'Manual Trade',
                 'confidence' => 100,
@@ -227,20 +332,28 @@ class TradePropagationService
                 'take_profit' => $takeProfit,
                 'risk_reward_ratio' => abs(($takeProfit - $entryPrice) / ($entryPrice - $stopLoss)),
                 'position_size_percent' => $positionSizePercent,
-                'status' => 'active',
+                'status' => 'pending',
             ]);
 
             // Execute admin trade FIRST - if this fails, nothing propagates
             $adminResult = $this->executeAdminTrade($signal, $positionSizePercent, $orderType);
             
             if (!$adminResult['success']) {
+                // Mark signal as failed and rollback
+                $signal->update([
+                    'status' => 'failed',
+                    'notes' => 'Admin execution failed: ' . $adminResult['error']
+                ]);
+                
+                DB::commit(); // Commit the signal with failed status
+                
                 throw new \Exception('Failed to execute admin trade: ' . $adminResult['error']);
             }
 
-            // Then propagate to all users with same order type
+            // Admin succeeded - propagate to users
             $userResults = $this->propagateSignalToAllUsers($signal, $orderType);
 
-            // Mark signal as executed
+            // Update signal status
             $signal->update([
                 'status' => 'executed',
                 'executed_at' => now(),
@@ -248,13 +361,12 @@ class TradePropagationService
 
             DB::commit();
 
-            // Combine results
             return [
+                'admin_trade' => $adminResult['trade'],
                 'total' => $userResults['total'],
                 'successful' => $userResults['successful'],
                 'failed' => $userResults['failed'],
                 'errors' => $userResults['errors'],
-                'admin_trade' => $adminResult['trade'],
             ];
 
         } catch (\Exception $e) {
@@ -264,261 +376,90 @@ class TradePropagationService
         }
     }
 
-    public function executeAdminTrade(Signal $signal, $positionSizePercent, $orderType = 'Market')
-    {
-        try {
-            // Get admin exchange account
-            $adminAccount = ExchangeAccount::getBybitAccount();
-
-            if (!$adminAccount) {
-                throw new \Exception('No admin Bybit account configured. Please add one in settings.');
-            }
-
-            // Get admin user (first admin user)
-            $admin = User::where('is_admin', true)->first();
-            
-            if (!$admin) {
-                throw new \Exception('No admin user found in system');
-            }
-
-            // Initialize Bybit service with admin credentials
-            $bybit = new BybitService($adminAccount->api_key, $adminAccount->api_secret);
-
-            // Get admin account balance
-            $balance = $bybit->getBalance();
-            
-            if ($balance <= 0) {
-                throw new \Exception('Insufficient admin account balance');
-            }
-            
-            // Get leverage from settings
-            $leverageSetting = Setting::get('signal_leverage', 'Max');
-            $leverage = $this->calculateLeverage($leverageSetting, $signal->symbol, $bybit);
-
-            // Calculate position size
-            $riskAmount = ($balance * $positionSizePercent) / 100;
-            $stopLossDistance = abs($signal->entry_price - $signal->stop_loss);
-            $quantity = $riskAmount / $stopLossDistance;
-            $quantity = round($quantity, 3);
-
-            // Create admin's trade record with signal_id linkage
-            $trade = Trade::create([
-                'user_id' => $admin->id,
-                'signal_id' => $signal->id,
-                'exchange_account_id' => $adminAccount->id,
-                'symbol' => $signal->symbol,
-                'exchange' => 'bybit',
-                'type' => $signal->type,
-                'entry_price' => $signal->entry_price,
-                'stop_loss' => $signal->stop_loss,
-                'take_profit' => $signal->take_profit,
-                'quantity' => $quantity,
-                'leverage' => $leverage,
-                'status' => 'pending',
-            ]);
-
-            // Execute actual trade on Bybit
-            $side = $signal->type === 'long' ? 'Buy' : 'Sell';
-            
-            // For Limit orders, use entry_price as the limit price
-            $limitPrice = ($orderType === 'Limit') ? $signal->entry_price : null;
-            
-            $orderResult = $bybit->placeOrder(
-                $signal->symbol,
-                $side,
-                $quantity,
-                $orderType,  // Use the selected order type
-                $limitPrice,  // Pass limit price for Limit orders
-                $signal->stop_loss,
-                $signal->take_profit,
-                $leverage
-            );
-
-            if (!$orderResult || !isset($orderResult['orderId'])) {
-                throw new \Exception('Failed to place order on Bybit: Invalid response');
-            }
-
-            $orderId = $orderResult['orderId'];
-            Log::info("Admin order placed: Order ID {$orderId}, Type: {$orderType}");
-
-            // Handle execution price based on order type
-            if ($orderType === 'Market') {
-                // Fetch actual execution price for Market orders
-                $actualPrice = $bybit->waitForOrderFillAndGetPrice($signal->symbol, $orderId);
-                if (!$actualPrice) $actualPrice = $signal->entry_price; // Fallback
-
-                // Update trade with actual price
-                $trade->update([
-                    'exchange_order_id' => $orderId,
-                    'entry_price' => $actualPrice,
-                    'status' => 'open',
-                    'opened_at' => now(),
-                ]);
-
-                // Create active position record for admin
-                $position = Position::create([
-                    'user_id' => $admin->id,
-                    'trade_id' => $trade->id,
-                    'exchange_account_id' => $adminAccount->id,
-                    'symbol' => $signal->symbol,
-                    'exchange' => 'bybit',
-                    'side' => $signal->type,
-                    'entry_price' => $actualPrice,
-                    'current_price' => $actualPrice,
-                    'quantity' => $quantity,
-                    'leverage' => $leverage,
-                    'stop_loss' => $signal->stop_loss,
-                    'take_profit' => $signal->take_profit,
-                    'is_active' => true,
-                    'last_updated_at' => now(),
-                ]);
-
-            } else {
-                // For Limit orders, keep as pending
-                $trade->update([
-                    'exchange_order_id' => $orderId,
-                    'status' => 'pending', // Stays pending until filled
-                ]);
-
-                Log::info("Admin limit order placed, awaiting fill");
-                $position = null;
-            }
-
-            Log::info("Admin trade executed successfully with {$leverage}x leverage", [
-                'trade_id' => $trade->id,
-                'order_id' => $orderId,
-                'order_type' => $orderType,
-                'signal_id' => $signal->id,
-                'symbol' => $signal->symbol,
-                'quantity' => $quantity,
-                'leverage' => $leverage,
-            ]);
-
-            return [
-                'success' => true,
-                'trade' => $trade,
-                'position' => $position,
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('Failed to execute admin trade: ' . $e->getMessage(), [
-                'signal_id' => $signal->id ?? null,
-                'trace' => $e->getTraceAsString(),
-            ]);
-            
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-            ];
-        }
-    }
-    
     /**
      * Calculate leverage based on setting
      */
     protected function calculateLeverage($leverageSetting, $symbol, $bybit)
     {
-        // If leverage is 'Max', fetch max from Bybit
         if (strtolower($leverageSetting) === 'max') {
             return $bybit->getMaxLeverage($symbol);
         }
         
-        // Otherwise use the numeric value
         return (float) $leverageSetting;
     }
 
     /**
-     * Close all positions for a specific signal (admin + all users)
+     * Close all positions by signal_id (admin + all users)
      */
     public function closeAllPositionsBySignal($signalId)
     {
-        $results = [
-            'total' => 0,
-            'closed' => 0,
-            'failed' => 0,
-            'errors' => [],
-        ];
-
-        // Get all trades for this signal
+        Log::info("[TradePropagationService] Closing all positions for signal {$signalId}");
+        
         $trades = Trade::where('signal_id', $signalId)
             ->where('status', 'open')
             ->with(['user', 'exchangeAccount', 'position'])
             ->get();
 
-        $results['total'] = $trades->count();
+        $results = [
+            'closed' => 0,
+            'failed' => 0,
+            'errors' => []
+        ];
 
         foreach ($trades as $trade) {
             try {
-                $this->closeTradePosition($trade);
+                if (!$trade->exchangeAccount || !$trade->exchangeAccount->is_active) {
+                    throw new \Exception('Exchange account not active');
+                }
+
+                $bybit = new BybitService(
+                    $trade->exchangeAccount->api_key,
+                    $trade->exchangeAccount->api_secret
+                );
+
+                $side = $trade->type === 'long' ? 'Buy' : 'Sell';
+                $bybit->closePosition($trade->symbol, $side);
+
+                $currentPrice = $bybit->getCurrentPrice($trade->symbol);
+
+                DB::beginTransaction();
+
+                $trade->update([
+                    'exit_price' => $currentPrice,
+                    'status' => 'closed',
+                    'closed_at' => now(),
+                ]);
+
+                $trade->calculatePnl();
+
+                if ($trade->position) {
+                    $trade->position->close($currentPrice);
+                }
+
+                DB::commit();
+
                 $results['closed']++;
+
+                Log::info("Position closed for user {$trade->user_id}", [
+                    'trade_id' => $trade->id,
+                    'symbol' => $trade->symbol,
+                    'pnl' => $trade->realized_pnl
+                ]);
+
             } catch (\Exception $e) {
+                DB::rollBack();
+                
                 $results['failed']++;
                 $results['errors'][] = [
-                    'trade_id' => $trade->id,
                     'user_id' => $trade->user_id,
-                    'error' => $e->getMessage(),
+                    'trade_id' => $trade->id,
+                    'error' => $e->getMessage()
                 ];
-                
-                Log::error("Failed to close trade {$trade->id}: " . $e->getMessage());
+
+                Log::error("Failed to close position for user {$trade->user_id}: " . $e->getMessage());
             }
         }
-
-        Log::info("Closed all positions for signal {$signalId}", $results);
 
         return $results;
-    }
-
-    /**
-     * Close a single trade position
-     */
-    protected function closeTradePosition(Trade $trade)
-    {
-        if ($trade->status !== 'open') {
-            throw new \Exception('Trade is not open');
-        }
-
-        // Determine which credentials to use
-        if ($trade->user->is_admin) {
-            $adminAccount = ExchangeAccount::getBybitAccount();
-            if (!$adminAccount) {
-                throw new \Exception('No admin Bybit account configured');
-            }
-            $bybit = new BybitService($adminAccount->api_key, $adminAccount->api_secret);
-        } else {
-            $exchangeAccount = $trade->exchangeAccount;
-            if (!$exchangeAccount) {
-                throw new \Exception('No exchange account found for this trade');
-            }
-            $bybit = new BybitService($exchangeAccount->api_key, $exchangeAccount->api_secret);
-        }
-
-        $side = $trade->type === 'long' ? 'Buy' : 'Sell';
-        
-        $closeResult = $bybit->closePosition($trade->symbol, $side);
-
-        if (!$closeResult) {
-            throw new \Exception('Failed to close position on Bybit');
-        }
-
-        $currentPrice = $bybit->getCurrentPrice($trade->symbol);
-
-        $trade->update([
-            'exit_price' => $currentPrice,
-            'status' => 'closed',
-            'closed_at' => now(),
-        ]);
-
-        $trade->calculatePnl();
-
-        if ($trade->position) {
-            $trade->position->close($currentPrice);
-        }
-
-        Log::info("Trade closed for user {$trade->user_id}: {$trade->symbol}", [
-            'trade_id' => $trade->id,
-            'pnl' => $trade->realized_pnl,
-        ]);
-
-        return $trade;
     }
 }

@@ -8,6 +8,7 @@ use App\Models\Setting;
 use App\Services\SignalGeneratorService;
 use App\Services\TradePropagationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class SignalController extends Controller
 {
@@ -25,6 +26,12 @@ class SignalController extends Controller
         // Get signal generator settings
         $signalInterval = (int) Setting::get('signal_interval', 15);
         $topSignalsCount = (int) Setting::get('signal_top_count', 5);
+        
+        // Get additional settings for view
+        $autoExecute = (bool) Setting::get('signal_auto_execute', true);
+        $useDynamicPairs = (bool) Setting::get('signal_use_dynamic_pairs', false);
+        $minVolume = (int) Setting::get('signal_min_volume', 5000000);
+        $minConfidence = (int) Setting::get('signal_min_confidence', 70);
 
         // Build query with filters
         $query = Signal::with('trades');
@@ -94,30 +101,89 @@ class SignalController extends Controller
             'stats',
             'recentSignals',
             'signalInterval',
-            'topSignalsCount'
+            'topSignalsCount',
+            'autoExecute',
+            'useDynamicPairs',
+            'minVolume',
+            'minConfidence'
         ));
     }
 
-    public function show(Signal $signal)
+    /**
+     * Get signal details for modal display
+     */
+    public function details(Signal $signal)
     {
-        $signal->load('trades');
-        
-        return response()->json([
-            'signal' => $signal
-        ]);
+        try {
+            $signal->load('trades');
+            
+            $riskReward = $signal->risk_reward_ratio 
+                ? number_format($signal->risk_reward_ratio, 1) 
+                : '1:' . number_format(abs(($signal->take_profit - $signal->entry_price) / ($signal->entry_price - $signal->stop_loss)), 1);
+            
+            return response()->json([
+                'success' => true,
+                'symbol' => $signal->symbol,
+                'pattern' => $signal->pattern,
+                'type' => $signal->type,
+                'order_type' => $signal->order_type ?? 'Market',
+                'confidence' => number_format($signal->confidence, 0),
+                'entry_price' => number_format($signal->entry_price, 2),
+                'take_profit' => number_format($signal->take_profit, 2),
+                'stop_loss' => number_format($signal->stop_loss, 2),
+                'risk_reward_ratio' => $riskReward,
+                'status' => $signal->status,
+                'timeframe' => $signal->timeframe,
+                'created_at' => $signal->created_at->toIso8601String(),
+                'trades_count' => $signal->trades->count(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to load signal details: ' . $e->getMessage(), [
+                'signal_id' => $signal->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load signal details: ' . $e->getMessage()
+            ], 500);
+        }
     }
     
+    /**
+     * Generate new signals
+     */
     public function generate(Request $request)
     {
         try {
-            // Get settings
-            $symbols = Setting::get('signal_pairs', ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT']);
+            Log::info('[SignalController] Generate signals request started');
+            
+            $useDynamicPairs = (bool) Setting::get('signal_use_dynamic_pairs', false);
+            $symbols = null;
+            
+            if (!$useDynamicPairs) {
+                $symbols = Setting::get('signal_pairs', ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT']);
+            }
+            
             $timeframe = Setting::get('signal_primary_timeframe', '15');
             $minConfidence = (int) Setting::get('signal_min_confidence', 70);
+            $topSignalsCount = (int) Setting::get('signal_top_count', 5);
+            $autoExecute = (bool) Setting::get('signal_auto_execute', true);
 
-            $signals = $this->signalGenerator->generateSignals($symbols, $timeframe, $minConfidence);
+            Log::info('[SignalController] Signal generation settings', [
+                'use_dynamic_pairs' => $useDynamicPairs,
+                'symbols' => $symbols,
+                'timeframe' => $timeframe,
+                'min_confidence' => $minConfidence,
+                'top_signals_count' => $topSignalsCount,
+                'auto_execute' => $autoExecute,
+            ]);
 
-            if (empty($signals)) {
+            $signalsData = $this->signalGenerator->generateSignals($symbols, $timeframe, $minConfidence);
+
+            if (empty($signalsData)) {
+                Log::info('[SignalController] No signals generated - market conditions not met');
+                
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => false,
@@ -129,13 +195,95 @@ class SignalController extends Controller
                     ->with('info', 'No signals generated. Market conditions do not meet criteria.');
             }
 
-            $message = count($signals) . ' signal(s) generated successfully!';
+            usort($signalsData, function($a, $b) {
+                return $b['confidence'] <=> $a['confidence'];
+            });
+            
+            $signalsData = array_slice($signalsData, 0, $topSignalsCount);
+
+            Log::info('[SignalController] Creating ' . count($signalsData) . ' signals in database');
+
+            $createdSignals = [];
+            foreach ($signalsData as $signalData) {
+                $signal = $this->signalGenerator->createSignal($signalData, $timeframe);
+                $createdSignals[] = $signal;
+                
+                Log::info('[SignalController] Signal created', [
+                    'id' => $signal->id,
+                    'symbol' => $signal->symbol,
+                    'type' => $signal->type,
+                    'confidence' => $signal->confidence,
+                    'order_type' => $signal->order_type ?? 'Market',
+                ]);
+            }
+
+            $executedCount = 0;
+            
+            if ($autoExecute) {
+                Log::info('[SignalController] Auto-execute enabled, executing signals');
+                
+                foreach ($createdSignals as $signal) {
+                    try {
+                        $orderType = $signal->order_type ?? Setting::get('signal_order_type', 'Market');
+                        
+                        $adminResult = $this->tradePropagation->executeAdminTrade(
+                            $signal, 
+                            Setting::get('signal_position_size', 5),
+                            $orderType
+                        );
+                        
+                        if ($adminResult['success']) {
+                            $userResults = $this->tradePropagation->propagateSignalToAllUsers($signal, $orderType);
+
+                            $signal->update([
+                                'status' => 'executed',
+                                'executed_at' => now(),
+                            ]);
+                            
+                            $executedCount++;
+                            
+                            Log::info('[SignalController] Signal executed successfully', [
+                                'signal_id' => $signal->id,
+                                'users_successful' => $userResults['successful'],
+                                'users_failed' => $userResults['failed'],
+                            ]);
+                        } else {
+                            Log::error('[SignalController] Failed to execute admin trade', [
+                                'signal_id' => $signal->id,
+                                'error' => $adminResult['error']
+                            ]);
+                            
+                            $signal->update(['status' => 'failed']);
+                        }
+                    } catch (\Exception $e) {
+                        Log::error('[SignalController] Signal execution exception', [
+                            'signal_id' => $signal->id,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+                }
+            } else {
+                foreach ($createdSignals as $signal) {
+                    $signal->update(['status' => 'active']);
+                }
+            }
+
+            $message = count($createdSignals) . ' signal(s) generated successfully!';
+            if ($autoExecute && $executedCount > 0) {
+                $message .= " {$executedCount} executed automatically.";
+            }
+
+            Log::info('[SignalController] Signal generation completed', [
+                'generated' => count($createdSignals),
+                'executed' => $executedCount,
+            ]);
 
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
                     'message' => $message,
-                    'count' => count($signals)
+                    'count' => count($createdSignals),
+                    'executed' => $executedCount,
                 ]);
             }
 
@@ -143,7 +291,12 @@ class SignalController extends Controller
                 ->with('success', $message);
                 
         } catch (\Exception $e) {
-            \Log::error('Signal generation failed: ' . $e->getMessage());
+            Log::error('[SignalController] Signal generation failed', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             if ($request->expectsJson()) {
                 return response()->json([
@@ -157,6 +310,9 @@ class SignalController extends Controller
         }
     }
 
+    /**
+     * Execute a signal manually
+     */
     public function execute(Request $request, Signal $signal)
     {
         try {
@@ -164,10 +320,13 @@ class SignalController extends Controller
                 return back()->with('error', 'Signal is not active and cannot be executed.');
             }
 
-            // Get order type from settings or default to Market
-            $orderType = Setting::get('signal_order_type', 'Market');
+            $orderType = $signal->order_type ?? Setting::get('signal_order_type', 'Market');
             
-            // Execute admin trade FIRST
+            Log::info('[SignalController] Manual signal execution started', [
+                'signal_id' => $signal->id,
+                'order_type' => $orderType,
+            ]);
+            
             $adminResult = $this->tradePropagation->executeAdminTrade(
                 $signal, 
                 Setting::get('signal_position_size', 5),
@@ -178,7 +337,6 @@ class SignalController extends Controller
                 throw new \Exception('Failed to execute admin trade: ' . $adminResult['error']);
             }
             
-            // Then propagate to users
             $userResults = $this->tradePropagation->propagateSignalToAllUsers($signal, $orderType);
 
             $signal->update([
@@ -188,15 +346,28 @@ class SignalController extends Controller
 
             $message = "Signal executed: Admin + {$userResults['successful']} users successful, {$userResults['failed']} failed out of {$userResults['total']} users.";
 
+            Log::info('[SignalController] Signal execution completed', [
+                'signal_id' => $signal->id,
+                'users_successful' => $userResults['successful'],
+                'users_failed' => $userResults['failed'],
+            ]);
+
             return redirect()->route('admin.signals.index')
                 ->with('success', $message);
 
         } catch (\Exception $e) {
-            \Log::error('Signal execution failed: ' . $e->getMessage());
+            Log::error('[SignalController] Signal execution failed', [
+                'signal_id' => $signal->id,
+                'error' => $e->getMessage(),
+            ]);
+            
             return back()->with('error', 'Signal execution failed: ' . $e->getMessage());
         }
     }
 
+    /**
+     * Cancel a signal
+     */
     public function cancel(Signal $signal)
     {
         try {
@@ -212,6 +383,9 @@ class SignalController extends Controller
         }
     }
 
+    /**
+     * Calculate success rate
+     */
     protected function calculateSuccessRate()
     {
         $executedSignals = Signal::where('status', 'executed')
@@ -241,6 +415,9 @@ class SignalController extends Controller
         return round(($winningTrades / $totalTrades) * 100, 2);
     }
 
+    /**
+     * Export signals to CSV
+     */
     protected function exportToCsv($signals)
     {
         $filename = 'signals_' . now()->format('Y-m-d_His') . '.csv';
@@ -253,7 +430,6 @@ class SignalController extends Controller
         $callback = function() use ($signals) {
             $file = fopen('php://output', 'w');
 
-            // CSV headers
             fputcsv($file, [
                 'ID',
                 'Created At',
@@ -270,7 +446,6 @@ class SignalController extends Controller
                 'Executed At'
             ]);
 
-            // CSV rows
             foreach ($signals as $signal) {
                 fputcsv($file, [
                     $signal->id,

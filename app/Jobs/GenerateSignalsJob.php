@@ -45,13 +45,18 @@ class GenerateSignalsJob implements ShouldQueue
             Log::info('[GenerateSignalsJob] Loading settings from database');
             
             // Schedule Configuration
-            $symbols = Setting::get('signal_pairs', ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT']);
+            $useDynamicPairs = (bool) Setting::get('signal_use_dynamic_pairs', false);
+            $symbols = null;
+            
+            if (!$useDynamicPairs) {
+                $symbols = Setting::get('signal_pairs', ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT']);
+            }
             $topSignalsCount = (int) Setting::get('signal_top_count', 5);
             $minConfidence = (int) Setting::get('signal_min_confidence', 70);
             $signalExpiry = (int) Setting::get('signal_expiry', 30);
             
             Log::info('[GenerateSignalsJob] Schedule configuration loaded', [
-                'symbols_count' => count($symbols),
+                'symbols_count' => $useDynamicPairs ? 'dynamic' : count($symbols),
                 'top_signals_count' => $topSignalsCount,
                 'min_confidence' => $minConfidence,
                 'signal_expiry_minutes' => $signalExpiry
@@ -126,25 +131,25 @@ class GenerateSignalsJob implements ShouldQueue
             }
             
             // ========================================
-            // Generate Signals
+            // Generate Signals (Raw Data)
             // ========================================
             
             Log::info('[GenerateSignalsJob] Calling SignalGeneratorService->generateSignals()');
             
             // Generate signals with timeframe (remove 'm' suffix)
             $timeframeValue = $primaryTimeframe;
-            $signals = $signalGenerator->generateSignals($symbols, $timeframeValue, $minConfidence);
+            $rawSignals = $signalGenerator->generateSignals($symbols, $timeframeValue, $minConfidence);
 
             Log::info('[GenerateSignalsJob] Signal generation completed', [
-                'signals_generated' => count($signals)
+                'signals_generated' => count($rawSignals)
             ]);
 
-            if (empty($signals)) {
+            if (empty($rawSignals)) {
                 Log::info('[GenerateSignalsJob] No signals generated - market conditions not met');
                 return;
             }
 
-            Log::info("[GenerateSignalsJob] Generated " . count($signals) . " signals");
+            Log::info("[GenerateSignalsJob] Generated " . count($rawSignals) . " raw signals");
 
             // ========================================
             // Filter Signals by Risk/Reward & Stop Loss
@@ -152,23 +157,34 @@ class GenerateSignalsJob implements ShouldQueue
             
             Log::info('[GenerateSignalsJob] Starting signal filtering process');
             
-            $filteredSignals = collect($signals)->filter(function ($signal) use ($riskRewardRatio, $maxStopLossPercent, $logAnalysis) {
+            $filteredSignals = collect($rawSignals)->filter(function ($signal) use ($riskRewardRatio, $maxStopLossPercent, $logAnalysis) {
                 // Parse risk reward ratio (e.g., "1:2" => 2.0)
                 $minRR = floatval(explode(':', $riskRewardRatio)[1] ?? 2);
                 
+                // Calculate actual R:R
+                $risk = abs($signal['entry_price'] - $signal['stop_loss']);
+                $reward = abs($signal['take_profit'] - $signal['entry_price']);
+                $actualRR = $risk > 0 ? ($reward / $risk) : 0;
+                
                 // Check risk/reward ratio
-                if ($signal->risk_reward_ratio < $minRR) {
+                if ($actualRR < $minRR) {
                     if ($logAnalysis) {
-                        Log::debug("[GenerateSignalsJob] Signal {$signal->id} rejected: R:R {$signal->risk_reward_ratio} < {$minRR}");
+                        Log::debug("[GenerateSignalsJob] Signal rejected: R:R {$actualRR} < {$minRR}", [
+                            'symbol' => $signal['symbol'],
+                            'pattern' => $signal['pattern']
+                        ]);
                     }
                     return false;
                 }
                 
                 // Check stop loss percentage
-                $slPercent = abs(($signal->entry_price - $signal->stop_loss) / $signal->entry_price) * 100;
+                $slPercent = abs(($signal['entry_price'] - $signal['stop_loss']) / $signal['entry_price']) * 100;
                 if ($slPercent > $maxStopLossPercent) {
                     if ($logAnalysis) {
-                        Log::debug("[GenerateSignalsJob] Signal {$signal->id} rejected: SL {$slPercent}% > {$maxStopLossPercent}%");
+                        Log::debug("[GenerateSignalsJob] Signal rejected: SL {$slPercent}% > {$maxStopLossPercent}%", [
+                            'symbol' => $signal['symbol'],
+                            'pattern' => $signal['pattern']
+                        ]);
                     }
                     return false;
                 }
@@ -177,7 +193,7 @@ class GenerateSignalsJob implements ShouldQueue
             });
 
             Log::info('[GenerateSignalsJob] Filtering completed', [
-                'signals_before' => count($signals),
+                'signals_before' => count($rawSignals),
                 'signals_after' => $filteredSignals->count()
             ]);
 
@@ -187,49 +203,55 @@ class GenerateSignalsJob implements ShouldQueue
             }
 
             // ========================================
-            // Update Signal Parameters
-            // ========================================
-            
-            Log::info('[GenerateSignalsJob] Updating signal parameters');
-            
-            foreach ($filteredSignals as $signal) {
-                $signal->update([
-                    'position_size_percent' => $defaultPositionSize,
-                    'expires_at' => now()->addMinutes($signalExpiry),
-                ]);
-            }
-
-            Log::info('[GenerateSignalsJob] Signal parameters updated');
-
-            // ========================================
             // Sort and Select Top Signals
             // ========================================
             
             Log::info('[GenerateSignalsJob] Selecting top signals');
             
-            $topSignals = $filteredSignals
+            $topSignalsData = $filteredSignals
                 ->sortByDesc('confidence')
-                ->take($topSignalsCount);
+                ->take($topSignalsCount)
+                ->values();
 
-            Log::info("[GenerateSignalsJob] Selected top {$topSignalsCount} signals for execution", [
-                'total_generated' => count($signals),
+            Log::info("[GenerateSignalsJob] Selected top {$topSignalsCount} signals", [
+                'total_generated' => count($rawSignals),
                 'after_filtering' => $filteredSignals->count(),
-                'top_selected' => $topSignals->count(),
+                'top_selected' => $topSignalsData->count(),
             ]);
+
+            // ========================================
+            // Store ONLY Top Signals in Database
+            // ========================================
+            
+            Log::info('[GenerateSignalsJob] Storing top signals in database');
+            
+            $storedSignals = [];
+            foreach ($topSignalsData as $signalData) {
+                $signal = $signalGenerator->createSignal($signalData, $timeframeValue);
+                $storedSignals[] = $signal;
+                
+                Log::info("[GenerateSignalsJob] Stored signal {$signal->id}", [
+                    'symbol' => $signal->symbol,
+                    'type' => $signal->type,
+                    'pattern' => $signal->pattern,
+                    'confidence' => $signal->confidence,
+                    'order_type' => $signal->order_type,
+                ]);
+            }
 
             // ========================================
             // Execute or Queue Signals
             // ========================================
             
             if ($testMode) {
-                Log::info('[GenerateSignalsJob] TEST MODE: Signals generated but not executed', [
-                    'signals' => $topSignals->pluck('id')->toArray(),
+                Log::info('[GenerateSignalsJob] TEST MODE: Signals stored but not executed', [
+                    'signal_ids' => collect($storedSignals)->pluck('id')->toArray(),
                 ]);
                 
-                // Mark as pending in test mode
-                $topSignals->each(function ($signal) {
-                    $signal->update(['status' => 'pending']);
-                });
+                // Mark as active in test mode (manual execution)
+                foreach ($storedSignals as $signal) {
+                    $signal->update(['status' => 'active']);
+                }
                 
                 Log::info('[GenerateSignalsJob] Test mode execution completed');
                 return;
@@ -238,22 +260,49 @@ class GenerateSignalsJob implements ShouldQueue
             if ($autoExecute) {
                 Log::info('[GenerateSignalsJob] Auto-execute enabled, processing signals');
                 
-                foreach ($topSignals as $signal) {
+                foreach ($storedSignals as $signal) {
                     try {
-                        Log::info("[GenerateSignalsJob] Executing signal {$signal->id}");
+                        Log::info("[GenerateSignalsJob] Attempting to execute signal {$signal->id}");
                         
-                        // Execute admin trade FIRST, then propagate to users
-                        $results = $this->executeSignalWithAdmin($signal, $tradePropagation, $orderType);
+                        // Execute admin trade FIRST
+                        $adminResult = $tradePropagation->executeAdminTrade(
+                            $signal, 
+                            $defaultPositionSize, 
+                            $signal->order_type ?? $orderType
+                        );
                         
-                        Log::info("[GenerateSignalsJob] Signal auto-executed", [
+                        if (!$adminResult['success']) {
+                            // Admin execution failed - mark signal as failed, don't propagate
+                            Log::warning("[GenerateSignalsJob] Admin execution failed for signal {$signal->id}", [
+                                'error' => $adminResult['error']
+                            ]);
+                            
+                            $signal->update([
+                                'status' => 'failed',
+                                'notes' => 'Admin execution failed: ' . $adminResult['error']
+                            ]);
+                            
+                            continue; // Skip to next signal
+                        }
+                        
+                        // Admin succeeded - now propagate to users
+                        Log::info("[GenerateSignalsJob] Admin execution successful for signal {$signal->id}, propagating to users");
+                        
+                        $userResults = $tradePropagation->propagateSignalToAllUsers(
+                            $signal, 
+                            $signal->order_type ?? $orderType
+                        );
+                        
+                        Log::info("[GenerateSignalsJob] Signal {$signal->id} executed", [
                             'signal_id' => $signal->id,
                             'symbol' => $signal->symbol,
                             'type' => $signal->type,
-                            'order_type' => $orderType,
+                            'order_type' => $signal->order_type ?? $orderType,
                             'confidence' => $signal->confidence,
-                            'admin_executed' => isset($results['admin_trade']),
-                            'successful' => $results['successful'],
-                            'failed' => $results['failed'],
+                            'admin_executed' => true,
+                            'users_successful' => $userResults['successful'],
+                            'users_failed' => $userResults['failed'],
+                            'users_total' => $userResults['total'],
                         ]);
 
                         $signal->update([
@@ -271,21 +320,24 @@ class GenerateSignalsJob implements ShouldQueue
                         }
                         
                     } catch (\Exception $e) {
-                        Log::error("[GenerateSignalsJob] Failed to auto-execute signal {$signal->id}", [
+                        Log::error("[GenerateSignalsJob] Failed to execute signal {$signal->id}", [
                             'error' => $e->getMessage(),
                             'file' => $e->getFile(),
                             'line' => $e->getLine()
                         ]);
                         
-                        $signal->update(['status' => 'failed']);
+                        $signal->update([
+                            'status' => 'failed',
+                            'notes' => 'Execution error: ' . $e->getMessage()
+                        ]);
                     }
                 }
             } else {
                 Log::info('[GenerateSignalsJob] Auto-execute disabled. Signals marked as active for manual execution.');
                 
-                $topSignals->each(function ($signal) {
+                foreach ($storedSignals as $signal) {
                     $signal->update(['status' => 'active']);
-                });
+                }
             }
 
             Log::info('[GenerateSignalsJob] Signal generation job completed successfully');
@@ -300,56 +352,6 @@ class GenerateSignalsJob implements ShouldQueue
             
             throw $e;
         }
-    }
-
-    /**
-     * Execute signal for admin first, then propagate to all users
-     */
-    protected function executeSignalWithAdmin($signal, $tradePropagation, $orderType = 'Market')
-    {
-        Log::info("[GenerateSignalsJob] executeSignalWithAdmin() called for signal {$signal->id}");
-        
-        $positionSize = Setting::get('signal_position_size', 5);
-        
-        Log::info("[GenerateSignalsJob] Position size loaded: {$positionSize}%");
-        
-        // Execute admin trade FIRST using TradePropagationService
-        Log::info("[GenerateSignalsJob] Executing admin trade for signal {$signal->id}");
-        $adminResult = $tradePropagation->executeAdminTrade($signal, $positionSize, $orderType);
-        
-        if (!$adminResult['success']) {
-            Log::warning("[GenerateSignalsJob] Admin trade failed, not propagating to users", [
-                'signal_id' => $signal->id,
-                'error' => $adminResult['error']
-            ]);
-            
-            return [
-                'admin_trade' => null,
-                'total' => 0,
-                'successful' => 0,
-                'failed' => 0,
-                'errors' => [],
-            ];
-        }
-
-        Log::info("[GenerateSignalsJob] Admin trade successful, propagating to users");
-
-        // Now propagate to users with same order type
-        $userResults = $tradePropagation->propagateSignalToAllUsers($signal, $orderType);
-
-        Log::info("[GenerateSignalsJob] User propagation completed", [
-            'total' => $userResults['total'],
-            'successful' => $userResults['successful'],
-            'failed' => $userResults['failed']
-        ]);
-
-        return [
-            'admin_trade' => $adminResult['trade'],
-            'total' => $userResults['total'],
-            'successful' => $userResults['successful'],
-            'failed' => $userResults['failed'],
-            'errors' => $userResults['errors'],
-        ];
     }
 
     public function failed(\Throwable $exception): void

@@ -6,6 +6,14 @@
 
 @section('content')
 
+@php
+    $autoExecute = \App\Models\Setting::get('signal_auto_execute', true);
+    $useDynamicPairs = \App\Models\Setting::get('signal_use_dynamic_pairs', false);
+    $minVolume = \App\Models\Setting::get('signal_min_volume', 5000000);
+    $topSignalsCount = \App\Models\Setting::get('signal_top_count', 5);
+    $minConfidence = \App\Models\Setting::get('signal_min_confidence', 70);
+@endphp
+
 <!-- Signal Status Overview -->
 <div class="row g-3 mb-4">
     <div class="col-lg-8">
@@ -100,14 +108,14 @@
         <form id="filterForm" method="GET" action="{{ route('admin.signals.index') }}">
             <div class="row g-3">
                 <div class="col-lg-3">
-                    <select class="form-select" name="direction" onchange="document.getElementById('filterForm').submit()">
+                    <select class="form-select" name="direction" id="filterDirection" onchange="document.getElementById('filterForm').submit()">
                         <option value="">All Directions</option>
                         <option value="long" {{ request('direction') == 'long' ? 'selected' : '' }}>Long</option>
                         <option value="short" {{ request('direction') == 'short' ? 'selected' : '' }}>Short</option>
                     </select>
                 </div>
                 <div class="col-lg-3">
-                    <select class="form-select" name="confidence" onchange="document.getElementById('filterForm').submit()">
+                    <select class="form-select" name="confidence" id="filterConfidence" onchange="document.getElementById('filterForm').submit()">
                         <option value="">All Confidence</option>
                         <option value="high" {{ request('confidence') == 'high' ? 'selected' : '' }}>High (&gt;80%)</option>
                         <option value="medium" {{ request('confidence') == 'medium' ? 'selected' : '' }}>Medium (60-80%)</option>
@@ -115,7 +123,7 @@
                     </select>
                 </div>
                 <div class="col-lg-3">
-                    <select class="form-select" name="status" onchange="document.getElementById('filterForm').submit()">
+                    <select class="form-select" name="status" id="filterStatus" onchange="document.getElementById('filterForm').submit()">
                         <option value="">All Status</option>
                         <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
@@ -124,7 +132,7 @@
                     </select>
                 </div>
                 <div class="col-lg-3">
-                    <select class="form-select" name="timeframe" onchange="document.getElementById('filterForm').submit()">
+                    <select class="form-select" name="timeframe" id="filterTimeframe" onchange="document.getElementById('filterForm').submit()">
                         <option value="today" {{ request('timeframe', 'today') == 'today' ? 'selected' : '' }}>Today</option>
                         <option value="24h" {{ request('timeframe') == '24h' ? 'selected' : '' }}>Last 24 Hours</option>
                         <option value="7d" {{ request('timeframe') == '7d' ? 'selected' : '' }}>Last 7 Days</option>
@@ -179,24 +187,6 @@
                 </thead>
                 <tbody>
                     @forelse($recentSignals as $signal)
-                    @php
-                        $symbolColor = match(true) {
-                            str_contains($signal->symbol, 'BTC') => 'text-warning',
-                            str_contains($signal->symbol, 'ETH') => 'text-info',
-                            str_contains($signal->symbol, 'SOL') => 'text-purple',
-                            default => 'text-secondary'
-                        };
-                        
-                        $statusConfig = match($signal->status) {
-                            'active' => ['color' => 'primary', 'icon' => 'circle-fill', 'text' => 'Active'],
-                            'pending' => ['color' => 'warning', 'icon' => 'clock-fill', 'text' => 'Pending'],
-                            'executed' => ['color' => 'success', 'icon' => 'check-circle-fill', 'text' => 'Executed'],
-                            'expired' => ['color' => 'secondary', 'icon' => 'x-circle-fill', 'text' => 'Expired'],
-                            default => ['color' => 'secondary', 'icon' => 'circle', 'text' => $signal->status]
-                        };
-                        
-                        $confidenceColor = $signal->confidence >= 80 ? 'bg-success' : ($signal->confidence >= 60 ? 'bg-warning' : 'bg-danger');
-                    @endphp
                     <tr>
                         <td class="px-4">
                             <div class="small fw-semibold">{{ $signal->created_at->format('H:i:s') }}</div>
@@ -205,6 +195,14 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="me-2">
+                                    @php
+                                        $symbolColor = match(true) {
+                                            str_contains($signal->symbol, 'BTC') => 'text-warning',
+                                            str_contains($signal->symbol, 'ETH') => 'text-info',
+                                            str_contains($signal->symbol, 'SOL') => 'text-purple',
+                                            default => 'text-secondary'
+                                        };
+                                    @endphp
                                     <i class="bi bi-coin {{ $symbolColor }}"></i>
                                 </div>
                                 <div>
@@ -234,7 +232,8 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 <div class="progress me-2" style="width: 60px; height: 6px;">
-                                    <div class="progress-bar {{ $confidenceColor }}" style="width: {{ $signal->confidence }}%"></div>
+                                    <div class="progress-bar {{ $signal->confidence >= 80 ? 'bg-success' : ($signal->confidence >= 60 ? 'bg-warning' : 'bg-danger') }}" 
+                                         style="width: {{ $signal->confidence }}%"></div>
                                 </div>
                                 <span class="small fw-semibold">{{ number_format($signal->confidence, 0) }}%</span>
                             </div>
@@ -243,6 +242,15 @@
                             <span class="fw-semibold">1:{{ number_format($signal->risk_reward_ratio, 1) }}</span>
                         </td>
                         <td>
+                            @php
+                                $statusConfig = match($signal->status) {
+                                    'active' => ['color' => 'primary', 'icon' => 'circle-fill', 'text' => 'Active'],
+                                    'pending' => ['color' => 'warning', 'icon' => 'clock-fill', 'text' => 'Pending'],
+                                    'executed' => ['color' => 'success', 'icon' => 'check-circle-fill', 'text' => 'Executed'],
+                                    'expired' => ['color' => 'secondary', 'icon' => 'x-circle-fill', 'text' => 'Expired'],
+                                    default => ['color' => 'secondary', 'icon' => 'circle', 'text' => $signal->status]
+                                };
+                            @endphp
                             <span class="badge bg-{{ $statusConfig['color'] }} bg-opacity-10 text-{{ $statusConfig['color'] }} border border-{{ $statusConfig['color'] }} border-opacity-25">
                                 <i class="bi bi-{{ $statusConfig['icon'] }}" style="font-size: 6px;"></i> {{ $statusConfig['text'] }}
                             </span>
@@ -293,6 +301,7 @@
         </div>
     </div>
 
+    <!-- Pagination -->
     @if($recentSignals->hasPages())
     <div class="card-footer bg-transparent border-0 p-4">
         <div class="d-flex justify-content-between align-items-center">
@@ -392,6 +401,34 @@
     </div>
 </div>
 
+<!-- Execute Confirmation Modal -->
+<div class="modal fade" id="executeConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-play-circle-fill text-success me-2"></i>
+                    Execute Signal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning border-0">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Warning:</strong> This will execute the signal for admin account and propagate to all active users.
+                </div>
+                <p class="mb-0">Are you sure you want to execute this signal?</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmExecuteBtn">
+                    <i class="bi bi-play-fill me-2"></i>Execute
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Alert/Notification Modal -->
 <div class="modal fade" id="alertModal" tabindex="-1">
     <div class="modal-dialog">
@@ -414,20 +451,195 @@
 
 @push('scripts')
 <script>
+// Calculate next run time
 function updateNextRunTime() {
     const intervalMinutes = {{ $signalInterval }};
     const now = new Date();
     const minutes = now.getMinutes();
     const nextRun = intervalMinutes - (minutes % intervalMinutes);
+    
     document.getElementById('nextRunTime').textContent = `in ${nextRun} minute${nextRun > 1 ? 's' : ''}`;
 }
 
+// Update immediately and every minute
 updateNextRunTime();
 setInterval(updateNextRunTime, 60000);
 
+// Handle signal generation form submission
+document.getElementById('generateSignalForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const btn = document.getElementById('startGenerationBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+    
+    fetch(this.action, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('generateSignalModal'));
+        modal.hide();
+        
+        if (data.success) {
+            showToast('success', data.message || 'Signals generated successfully!');
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showToast('error', data.message || 'Signal generation failed');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-play-circle-fill me-2"></i>Start Analysis';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'An error occurred during signal generation');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-play-circle-fill me-2"></i>Start Analysis';
+    });
+});
+
+// View signal details
+function viewSignalDetails(signalId) {
+    const modal = new bootstrap.Modal(document.getElementById('signalDetailsModal'));
+    modal.show();
+    
+    fetch(`/admin/signals/${signalId}`)
+        .then(response => response.json())
+        .then(data => {
+            const signal = data.signal;
+            
+            const content = `
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-body-secondary">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3">Trade Information</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Pair</span>
+                                    <span class="fw-bold">${signal.symbol}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Direction</span>
+                                    <span class="badge bg-${signal.type === 'long' ? 'success' : 'danger'}">${signal.type.toUpperCase()}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Entry Price</span>
+                                    <span class="fw-bold">$${parseFloat(signal.entry_price).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Take Profit</span>
+                                    <span class="text-success fw-bold">$${parseFloat(signal.take_profit).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Stop Loss</span>
+                                    <span class="text-danger fw-bold">$${parseFloat(signal.stop_loss).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 bg-body-secondary">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3">Analysis Details</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Confidence</span>
+                                    <span class="badge bg-success">${Math.round(signal.confidence)}%</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Risk/Reward</span>
+                                    <span class="fw-bold">1:${parseFloat(signal.risk_reward_ratio).toFixed(1)}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Timeframe</span>
+                                    <span class="fw-bold">${signal.timeframe}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-muted">Generated</span>
+                                    <span class="fw-bold">${new Date(signal.created_at).toLocaleTimeString()}</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted">Status</span>
+                                    <span class="badge bg-primary">${signal.status}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <h6 class="fw-bold mb-3">SMC Pattern</h6>
+                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2">
+                        <i class="bi bi-graph-up me-1"></i>${signal.pattern}
+                    </span>
+                </div>
+                ${signal.notes ? `
+                <div class="mt-4">
+                    <h6 class="fw-bold mb-3">Analysis Notes</h6>
+                    <p class="small text-muted mb-0">${signal.notes}</p>
+                </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('signalDetailsContent').innerHTML = content;
+            
+            // Update footer with execute button if signal is active
+            const footer = document.getElementById('signalDetailsFooter');
+            if (signal.status === 'active') {
+                footer.innerHTML = `
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <form action="/admin/signals/${signal.id}/execute" method="POST" class="d-inline">
+                        <input type="hidden" name="_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-play-circle-fill me-2"></i>Execute for All Users
+                        </button>
+                    </form>
+                `;
+            } else {
+                footer.innerHTML = '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('signalDetailsContent').innerHTML = `
+                <div class="alert alert-danger">
+                    Failed to load signal details. Please try again.
+                </div>
+            `;
+        });
+}
+
+// Refresh signals
+function refreshSignals() {
+    location.reload();
+}
+
+// Toast notification helper
+function showToast(type, message) {
+    // If using Bootstrap Toast
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    // Or use alert as fallback
+    alert(message);
+}
+
+// Auto-refresh signals every 60 seconds
 setInterval(() => {
+    // Silent refresh without page reload
     fetch(window.location.href, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
     })
     .then(response => response.text())
     .then(html => {
@@ -441,21 +653,18 @@ setInterval(() => {
     .catch(error => console.error('Auto-refresh failed:', error));
 }, 60000);
 
+// Filter signals
 function filterSignals(status) {
-    if (status === 'all') {
-        window.location.href = `{{ route('admin.signals.index') }}`;
-    } else {
-        window.location.href = `{{ route('admin.signals.index') }}?status=${status}`;
-    }
+    window.location.href = `{{ route('admin.signals.index') }}?status=${status}`;
 }
 
+// Generate signals
 function generateSignals() {
     const btn = document.getElementById('confirmGenerateBtn');
     const progress = document.getElementById('generateProgress');
     const result = document.getElementById('generateResult');
     
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
     progress.classList.remove('d-none');
     result.classList.add('d-none');
     
@@ -475,10 +684,14 @@ function generateSignals() {
             result.innerHTML = `
                 <div class="alert alert-success border-0 mb-0">
                     <i class="bi bi-check-circle-fill me-2"></i>
-                    <strong>Success!</strong> ${data.message}
+                    <strong>Success!</strong> Generated ${data.count} signals.
+                    ${data.executed ? `${data.executed} signals executed.` : ''}
                 </div>
             `;
-            setTimeout(() => location.reload(), 2000);
+            
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
         } else {
             result.innerHTML = `
                 <div class="alert alert-danger border-0 mb-0">
@@ -487,7 +700,6 @@ function generateSignals() {
                 </div>
             `;
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-play-circle-fill me-2"></i>Generate Signals';
         }
     })
     .catch(error => {
@@ -497,17 +709,14 @@ function generateSignals() {
         result.innerHTML = `
             <div class="alert alert-danger border-0 mb-0">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <strong>Error:</strong> Failed to generate signals. Please check the logs.
-                <br>
-                <i class="bi bi-exclamation-circle-fill me-2"></i>
-                <strong>Reason:</strong> ${error.message || error}
+                <strong>Error:</strong> Failed to generate signals. Please try again.
             </div>
         `;
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-play-circle-fill me-2"></i>Generate Signals';
     });
 }
 
+// View signal details
 function viewSignalDetails(signalId) {
     const modal = new bootstrap.Modal(document.getElementById('signalDetailsModal'));
     
@@ -523,13 +732,8 @@ function viewSignalDetails(signalId) {
     modal.show();
     
     fetch(`/admin/signals/${signalId}/details`)
-        .then(response => {
-            if (!response.ok) throw new Error('Failed to load signal details');
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            if (!data.success) throw new Error(data.message || 'Failed to load signal details');
-            
             document.getElementById('signalDetailsContent').innerHTML = `
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -556,10 +760,6 @@ function viewSignalDetails(signalId) {
                                     <span class="text-muted small">Confidence</span>
                                     <div class="fw-bold">${data.confidence}%</div>
                                 </div>
-                                <div class="mb-2">
-                                    <span class="text-muted small">Timeframe</span>
-                                    <div class="fw-bold">${data.timeframe}</div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -569,15 +769,15 @@ function viewSignalDetails(signalId) {
                                 <h6 class="fw-bold mb-3">Price Levels</h6>
                                 <div class="mb-2">
                                     <span class="text-muted small">Entry Price</span>
-                                    <div class="fw-bold">$${data.entry_price}</div>
+                                    <div class="fw-bold">$${parseFloat(data.entry_price).toLocaleString()}</div>
                                 </div>
                                 <div class="mb-2">
                                     <span class="text-muted small">Take Profit</span>
-                                    <div class="text-success fw-bold">$${data.take_profit}</div>
+                                    <div class="text-success fw-bold">$${parseFloat(data.take_profit).toLocaleString()}</div>
                                 </div>
                                 <div class="mb-2">
                                     <span class="text-muted small">Stop Loss</span>
-                                    <div class="text-danger fw-bold">$${data.stop_loss}</div>
+                                    <div class="text-danger fw-bold">$${parseFloat(data.stop_loss).toLocaleString()}</div>
                                 </div>
                                 <div class="mb-2">
                                     <span class="text-muted small">Risk:Reward</span>
@@ -587,10 +787,6 @@ function viewSignalDetails(signalId) {
                                     <span class="text-muted small">Status</span>
                                     <div><span class="badge bg-info">${data.status.toUpperCase()}</span></div>
                                 </div>
-                                <div class="mb-2">
-                                    <span class="text-muted small">Trades</span>
-                                    <div class="fw-bold">${data.trades_count} executed</div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -599,13 +795,68 @@ function viewSignalDetails(signalId) {
         })
         .catch(error => {
             console.error('Error:', error);
-            document.getElementById('signalDetailsContent').innerHTML = `
-                <div class="alert alert-danger border-0">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    Failed to load signal details. Please try again.
-                </div>
-            `;
+            showAlert('Error', 'Failed to load signal details');
         });
+}
+
+// Execute signal
+let executeSignalId = null;
+
+function executeSignal(signalId) {
+    executeSignalId = signalId;
+    const modal = new bootstrap.Modal(document.getElementById('executeConfirmModal'));
+    modal.show();
+    
+    document.getElementById('confirmExecuteBtn').onclick = function() {
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Executing...';
+        
+        fetch(`/admin/signals/${executeSignalId}/execute`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            bootstrap.Modal.getInstance(document.getElementById('executeConfirmModal')).hide();
+            
+            if (data.success) {
+                showAlert('Success', `Signal executed successfully! Propagated to ${data.propagated || 0} users.`, 'success');
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                showAlert('Error', data.message || 'Failed to execute signal', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            bootstrap.Modal.getInstance(document.getElementById('executeConfirmModal')).hide();
+            showAlert('Error', 'Failed to execute signal', 'danger');
+        });
+    };
+}
+
+// Show alert modal (replacement for alert())
+function showAlert(title, message, type = 'info') {
+    const modal = new bootstrap.Modal(document.getElementById('alertModal'));
+    document.getElementById('alertModalTitle').textContent = title;
+    
+    const iconClass = {
+        'success': 'bi-check-circle-fill text-success',
+        'danger': 'bi-exclamation-triangle-fill text-danger',
+        'warning': 'bi-exclamation-triangle-fill text-warning',
+        'info': 'bi-info-circle-fill text-primary'
+    }[type] || 'bi-info-circle-fill text-primary';
+    
+    document.getElementById('alertModalBody').innerHTML = `
+        <div class="d-flex align-items-start">
+            <i class="bi ${iconClass} fs-4 me-3"></i>
+            <div>${message}</div>
+        </div>
+    `;
+    
+    modal.show();
 }
 </script>
 @endpush

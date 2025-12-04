@@ -16,6 +16,7 @@ class Trade extends Model
         'symbol',
         'exchange',
         'type',
+        'order_type',
         'exchange_order_id',
         'entry_price',
         'stop_loss',
@@ -27,6 +28,7 @@ class Trade extends Model
         'realized_pnl_percent',
         'fees',
         'status',
+        'failure_reason',
         'opened_at',
         'closed_at',
     ];
@@ -106,7 +108,7 @@ class Trade extends Model
      */
     public function calculatePnl()
     {
-        if (!$this->exit_price) {
+        if (!$this->exit_price || !$this->entry_price) {
             return;
         }
 
@@ -115,8 +117,6 @@ class Trade extends Model
         } else {
             $pnl = ($this->entry_price - $this->exit_price) * $this->quantity;
         }
-
-        $pnl -= $this->fees;
 
         $pnlPercent = ($pnl / ($this->entry_price * $this->quantity)) * 100;
 
@@ -143,18 +143,26 @@ class Trade extends Model
     }
 
     /**
+     * Scope: Failed trades
+     */
+    public function scopeFailed($query)
+    {
+        return $query->where('status', 'failed');
+    }
+
+    /**
+     * Scope: By symbol
+     */
+    public function scopeBySymbol($query, $symbol)
+    {
+        return $query->where('symbol', $symbol);
+    }
+
+    /**
      * Scope: Profitable trades
      */
     public function scopeProfitable($query)
     {
         return $query->where('realized_pnl', '>', 0);
-    }
-
-    /**
-     * Scope: By user
-     */
-    public function scopeByUser($query, $userId)
-    {
-        return $query->where('user_id', $userId);
     }
 }

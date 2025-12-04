@@ -141,7 +141,7 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Maximum Pairs to Analyze</label>
-                    <input type="number" class="form-control form-control-lg" name="signal_max_pairs" value="{{ $maxPairs }}" min="10" max="100">
+                    <input type="number" class="form-control form-control-lg" name="signal_max_pairs" value="{{ $maxPairs }}" min="10" max="1000">
                     <div class="form-text">Number of pairs to analyze</div>
                 </div>
             </div>

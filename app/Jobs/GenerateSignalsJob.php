@@ -22,7 +22,7 @@ class GenerateSignalsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $timeout = 300; // 5 minutes
+    public $timeout = 900; // 15 minutes
     public $tries = 3;
 
     public function __construct()

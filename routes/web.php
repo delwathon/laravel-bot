@@ -67,7 +67,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/signals', [AdminSignalController::class, 'index'])->name('signals.index');
     Route::post('/signals/generate', [AdminSignalController::class, 'generate'])->name('signals.generate');
     Route::post('/signals/{signal}/execute', [AdminSignalController::class, 'execute'])->name('signals.execute');
-    Route::delete('/signals/{signal}', [AdminSignalController::class, 'cancel'])->name('signals.cancel');
+    Route::delete('/signals/{signal}/cancel', [AdminSignalController::class, 'cancel'])->name('signals.cancel');
     Route::get('/signals/{signal}/details', [AdminSignalController::class, 'details'])->name('signals.details');
     
     // Admin Trades (propagate to all users)

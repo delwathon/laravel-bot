@@ -18,6 +18,7 @@ class Signal extends Model
         'timeframe',
         'pattern',
         'confidence',
+        'current_price',
         'entry_price',
         'stop_loss',
         'take_profit',

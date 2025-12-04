@@ -23,6 +23,7 @@ return new class extends Migration
             $table->decimal('confidence', 5, 2); // 0-100
             
             // Price Levels
+            $table->decimal('current_price', 20, 8);
             $table->decimal('entry_price', 20, 8);
             $table->decimal('stop_loss', 20, 8);
             $table->decimal('take_profit', 20, 8);
@@ -32,7 +33,7 @@ return new class extends Migration
             $table->decimal('position_size_percent', 5, 2)->default(5.00); // % of capital
             
             // Status
-            $table->enum('status', ['pending', 'active', 'executed', 'expired', 'cancelled'])->default('pending');
+            $table->enum('status', ['pending', 'active', 'executed', 'expired', 'cancelled', 'failed'])->default('pending');
             $table->timestamp('expires_at')->nullable();
             $table->timestamp('executed_at')->nullable();
             

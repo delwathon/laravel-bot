@@ -169,6 +169,7 @@
                         <th class="border-0 py-3 fw-semibold">Pair</th>
                         <th class="border-0 py-3 fw-semibold">Direction</th>
                         <th class="border-0 py-3 fw-semibold">Pattern</th>
+                        <th class="border-0 py-3 fw-semibold">Current</th>
                         <th class="border-0 py-3 fw-semibold">Entry</th>
                         <th class="border-0 py-3 fw-semibold">TP / SL</th>
                         <th class="border-0 py-3 fw-semibold">Confidence</th>
@@ -209,7 +210,7 @@
                                 </div>
                                 <div>
                                     <div class="fw-semibold">{{ $signal->symbol }}</div>
-                                    <div class="text-muted small">{{ $signal->timeframe }}</div>
+                                    <div class="text-muted small">{{ $signal->timeframe >= 60 ? ($signal->timeframe/60).'h' : $signal->timeframe.'m' }} | {{ $signal->order_type }}</div>
                                 </div>
                             </div>
                         </td>
@@ -220,6 +221,9 @@
                         </td>
                         <td>
                             <div class="small">{{ $signal->pattern }}</div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">${{ number_format($signal->current_price, 2) }}</div>
                         </td>
                         <td>
                             <div class="fw-semibold">${{ number_format($signal->entry_price, 2) }}</div>
@@ -258,21 +262,14 @@
                                     <i class="bi bi-eye"></i>
                                 </button>
                                 @if($signal->status === 'active')
-                                    <form action="{{ route('admin.signals.execute', $signal) }}" method="POST" class="d-inline" onsubmit="return confirm('Execute this signal for all users?')">
-                                        @csrf
-                                        <button type="submit" class="btn btn-outline-success" title="Execute for All Users">
-                                            <i class="bi bi-play-circle-fill"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-outline-success" onclick="confirmExecuteSignal({{ $signal->id }}, '{{ $signal->symbol }}')" title="Execute for All Users">
+                                        <i class="bi bi-play-circle-fill"></i>
+                                    </button>
                                 @endif
                                 @if(in_array($signal->status, ['pending', 'active']))
-                                    <form action="{{ route('admin.signals.cancel', $signal) }}" method="POST" class="d-inline" onsubmit="return confirm('Cancel this signal?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-outline-danger" title="Cancel Signal">
-                                            <i class="bi bi-x-circle"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-outline-danger" onclick="confirmCancelSignal({{ $signal->id }}, '{{ $signal->symbol }}')" title="Cancel Signal">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
                                 @endif
                             </div>
                         </td>
@@ -343,8 +340,12 @@
                                     <div class="fw-bold">${{ number_format($minVolume / 1000000, 1) }}M</div>
                                 </div>
                                 <div class="col-6">
-                                    <div class="small text-muted">Top Signals</div>
+                                    <div class="small text-muted">Store Top Signals</div>
                                     <div class="fw-bold">{{ $topSignalsCount }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="small text-muted">Auto-Execute Top</div>
+                                    <div class="fw-bold">{{ $autoExecute ? $autoExecuteCount : 0 }}</div>
                                 </div>
                                 <div class="col-6">
                                     <div class="small text-muted">Min Confidence</div>
@@ -387,6 +388,66 @@
             </div>
             <div class="modal-body" id="signalDetailsContent">
                 <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Execute Signal Confirmation Modal -->
+<div class="modal fade" id="executeSignalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0 bg-success bg-opacity-10">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-play-circle-fill text-success me-2"></i>
+                    Execute Signal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning border-0 mb-3">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Warning:</strong> This will execute the signal for the admin account and propagate to all active users.
+                </div>
+                <p class="mb-0">Are you sure you want to execute signal for <strong id="executeSignalSymbol"></strong>?</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <form id="executeSignalForm" method="POST" style="display: inline;">
+                    @csrf
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-play-circle-fill me-2"></i>Execute Signal
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Signal Confirmation Modal -->
+<div class="modal fade" id="cancelSignalModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-0 bg-danger bg-opacity-10">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-x-circle-fill text-danger me-2"></i>
+                    Cancel Signal
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to cancel signal for <strong id="cancelSignalSymbol"></strong>?</p>
+                <p class="text-muted small mt-2 mb-0">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">No, Keep It</button>
+                <form id="cancelSignalForm" method="POST" style="display: inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-x-circle-fill me-2"></i>Yes, Cancel Signal
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -498,9 +559,7 @@ function generateSignals() {
             <div class="alert alert-danger border-0 mb-0">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 <strong>Error:</strong> Failed to generate signals. Please check the logs.
-                <br>
-                <i class="bi bi-exclamation-circle-fill me-2"></i>
-                <strong>Reason:</strong> ${error.message || error}
+                <br><strong>Reason:</strong> ${error.message || error}
             </div>
         `;
         btn.disabled = false;
@@ -606,6 +665,22 @@ function viewSignalDetails(signalId) {
                 </div>
             `;
         });
+}
+
+function confirmExecuteSignal(signalId, symbol) {
+    document.getElementById('executeSignalSymbol').textContent = symbol;
+    document.getElementById('executeSignalForm').action = `/admin/signals/${signalId}/execute`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('executeSignalModal'));
+    modal.show();
+}
+
+function confirmCancelSignal(signalId, symbol) {
+    document.getElementById('cancelSignalSymbol').textContent = symbol;
+    document.getElementById('cancelSignalForm').action = `/admin/signals/${signalId}/cancel`;
+    
+    const modal = new bootstrap.Modal(document.getElementById('cancelSignalModal'));
+    modal.show();
 }
 </script>
 @endpush

@@ -26,7 +26,7 @@ class TradePropagationService
      */
     public function executeAdminTrade(Signal $signal, $positionSizePercent = 5, $orderType = 'Market')
     {
-        Log::info("[TradePropagationService] Executing admin trade for signal {$signal->id}");
+        Log::info("[TradePropagationService] Executing admin trade for signal {$signal->id} as {$orderType} Order");
         
         try {
             // Get admin account
@@ -179,6 +179,9 @@ class TradePropagationService
             throw new \Exception("Insufficient balance for user {$user->id}");
         }
 
+        // Get instrument info to validate quantity rules
+        $instrumentInfo = $bybit->getInstrumentInfo($signal->symbol);
+
         // Get position size percentage from settings
         $positionSizePercent = Setting::get('signal_position_size', 5);
         
@@ -189,8 +192,15 @@ class TradePropagationService
         // Calculate quantity
         $riskAmount = ($balance * $positionSizePercent) / 100;
         $stopLossDistance = abs($signal->entry_price - $signal->stop_loss);
+        
+        if ($stopLossDistance <= 0) {
+            throw new \Exception("Invalid stop loss distance for symbol {$signal->symbol}");
+        }
+        
         $quantity = $riskAmount / $stopLossDistance;
-        $quantity = round($quantity, 3);
+
+        // Adjust quantity to meet Bybit's requirements
+        $quantity = $this->adjustQuantityToInstrument($quantity, $instrumentInfo);
 
         DB::beginTransaction();
 
@@ -386,6 +396,39 @@ class TradePropagationService
         }
         
         return (float) $leverageSetting;
+    }
+
+    /**
+     * Adjust quantity to meet instrument requirements
+     */
+    protected function adjustQuantityToInstrument($quantity, $instrumentInfo)
+    {
+        $minQty = $instrumentInfo['minOrderQty'];
+        $maxQty = $instrumentInfo['maxOrderQty'];
+        $qtyStep = $instrumentInfo['qtyStep'];
+        
+        // Ensure quantity is within min/max bounds
+        if ($quantity < $minQty) {
+            $quantity = $minQty;
+        }
+        
+        if ($quantity > $maxQty) {
+            $quantity = $maxQty;
+        }
+        
+        // Round to nearest valid step
+        $adjusted = floor($quantity / $qtyStep) * $qtyStep;
+        
+        // Ensure we didn't round below minimum
+        if ($adjusted < $minQty) {
+            $adjusted = $minQty;
+        }
+        
+        // Get decimal places from qtyStep
+        $decimals = strlen(substr(strrchr((string)$qtyStep, "."), 1));
+        $adjusted = round($adjusted, $decimals);
+        
+        return $adjusted;
     }
 
     /**

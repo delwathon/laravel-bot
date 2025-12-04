@@ -28,6 +28,9 @@ class TradeExecutionService
             throw new \Exception("Insufficient balance for user {$user->id}");
         }
 
+        // Get instrument info to validate quantity rules
+        $instrumentInfo = $bybit->getInstrumentInfo($signal->symbol);
+
         // Get position size percentage from settings
         $positionSizePercent = Setting::get('signal_position_size', 5);
         
@@ -35,11 +38,27 @@ class TradeExecutionService
         $leverageSetting = Setting::get('signal_leverage', 'Max');
         $leverage = $this->calculateLeverage($leverageSetting, $signal->symbol, $bybit);
 
-        // Calculate quantity
+        // Calculate quantity based on risk management
         $riskAmount = ($balance * $positionSizePercent) / 100;
         $stopLossDistance = abs($signal->entry_price - $signal->stop_loss);
+        
+        if ($stopLossDistance <= 0) {
+            throw new \Exception("Invalid stop loss distance for symbol {$signal->symbol}");
+        }
+        
         $quantity = $riskAmount / $stopLossDistance;
-        $quantity = round($quantity, 3);
+
+        // Adjust quantity to meet Bybit's requirements
+        $quantity = $this->adjustQuantityToInstrument($quantity, $instrumentInfo);
+
+        Log::info("Calculated quantity for user {$user->id}", [
+            'symbol' => $signal->symbol,
+            'balance' => $balance,
+            'risk_amount' => $riskAmount,
+            'calculated_qty' => $quantity,
+            'min_qty' => $instrumentInfo['minOrderQty'],
+            'qty_step' => $instrumentInfo['qtyStep'],
+        ]);
 
         DB::beginTransaction();
 
@@ -52,7 +71,8 @@ class TradeExecutionService
                 'symbol' => $signal->symbol,
                 'exchange' => 'bybit',
                 'type' => $signal->type,
-                'entry_price' => $signal->entry_price, // This will be updated with actual price
+                'order_type' => $signal->order_type,
+                'entry_price' => $signal->entry_price,
                 'stop_loss' => $signal->stop_loss,
                 'take_profit' => $signal->take_profit,
                 'quantity' => $quantity,
@@ -67,8 +87,8 @@ class TradeExecutionService
                 $signal->symbol,
                 $side,
                 $quantity,
-                'Market',
-                null,
+                $signal->order_type,
+                $signal->entry_price,
                 $signal->stop_loss,
                 $signal->take_profit,
                 $leverage
@@ -94,7 +114,7 @@ class TradeExecutionService
             // Update trade with ACTUAL execution price
             $trade->update([
                 'exchange_order_id' => $orderId,
-                'entry_price' => $actualExecutionPrice, // Update with ACTUAL price
+                'entry_price' => $actualExecutionPrice,
                 'status' => 'open',
                 'opened_at' => now(),
             ]);
@@ -107,8 +127,8 @@ class TradeExecutionService
                 'symbol' => $signal->symbol,
                 'exchange' => 'bybit',
                 'side' => $signal->type,
-                'entry_price' => $actualExecutionPrice, // ACTUAL execution price
-                'current_price' => $actualExecutionPrice, // Start with execution price
+                'entry_price' => $actualExecutionPrice,
+                'current_price' => $actualExecutionPrice,
                 'quantity' => $quantity,
                 'leverage' => $leverage,
                 'stop_loss' => $signal->stop_loss,
@@ -161,6 +181,39 @@ class TradeExecutionService
         
         // Otherwise use the numeric value
         return (float) $leverageSetting;
+    }
+
+    /**
+     * Adjust quantity to meet instrument requirements
+     */
+    protected function adjustQuantityToInstrument($quantity, $instrumentInfo)
+    {
+        $minQty = $instrumentInfo['minOrderQty'];
+        $maxQty = $instrumentInfo['maxOrderQty'];
+        $qtyStep = $instrumentInfo['qtyStep'];
+        
+        // Ensure quantity is within min/max bounds
+        if ($quantity < $minQty) {
+            $quantity = $minQty;
+        }
+        
+        if ($quantity > $maxQty) {
+            $quantity = $maxQty;
+        }
+        
+        // Round to nearest valid step
+        $adjusted = floor($quantity / $qtyStep) * $qtyStep;
+        
+        // Ensure we didn't round below minimum
+        if ($adjusted < $minQty) {
+            $adjusted = $minQty;
+        }
+        
+        // Get decimal places from qtyStep
+        $decimals = strlen(substr(strrchr((string)$qtyStep, "."), 1));
+        $adjusted = round($adjusted, $decimals);
+        
+        return $adjusted;
     }
 
     public function closeTradeForUser(Trade $trade)

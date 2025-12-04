@@ -25,10 +25,11 @@ class SignalController extends Controller
     {
         // Get signal generator settings
         $signalInterval = (int) Setting::get('signal_interval', 15);
-        $topSignalsCount = (int) Setting::get('signal_top_count', 5);
+        $topSignalsCount = (int) Setting::get('signal_top_count', 10);
         
         // Get additional settings for view
         $autoExecute = (bool) Setting::get('signal_auto_execute', true);
+        $autoExecuteCount = (int) Setting::get('signal_auto_execute_count', 3);
         $useDynamicPairs = (bool) Setting::get('signal_use_dynamic_pairs', false);
         $minVolume = (int) Setting::get('signal_min_volume', 5000000);
         $minConfidence = (int) Setting::get('signal_min_confidence', 70);
@@ -103,6 +104,7 @@ class SignalController extends Controller
             'signalInterval',
             'topSignalsCount',
             'autoExecute',
+            'autoExecuteCount',
             'useDynamicPairs',
             'minVolume',
             'minConfidence'
@@ -152,6 +154,8 @@ class SignalController extends Controller
     
     /**
      * Generate new signals
+     * - Stores top N signals (configurable via signal_top_count)
+     * - Auto-executes only top M signals (configurable via signal_auto_execute_count)
      */
     public function generate(Request $request)
     {
@@ -167,8 +171,9 @@ class SignalController extends Controller
             
             $timeframe = Setting::get('signal_primary_timeframe', '15');
             $minConfidence = (int) Setting::get('signal_min_confidence', 70);
-            $topSignalsCount = (int) Setting::get('signal_top_count', 5);
+            $topSignalsCount = (int) Setting::get('signal_top_count', 10); // Store top 10
             $autoExecute = (bool) Setting::get('signal_auto_execute', true);
+            $autoExecuteCount = (int) Setting::get('signal_auto_execute_count', 3); // Execute only top 3
 
             Log::info('[SignalController] Signal generation settings', [
                 'use_dynamic_pairs' => $useDynamicPairs,
@@ -177,6 +182,7 @@ class SignalController extends Controller
                 'min_confidence' => $minConfidence,
                 'top_signals_count' => $topSignalsCount,
                 'auto_execute' => $autoExecute,
+                'auto_execute_count' => $autoExecuteCount,
             ]);
 
             $signalsData = $this->signalGenerator->generateSignals($symbols, $timeframe, $minConfidence);
@@ -184,21 +190,18 @@ class SignalController extends Controller
             if (empty($signalsData)) {
                 Log::info('[SignalController] No signals generated - market conditions not met');
                 
-                if ($request->expectsJson()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'No signals generated. Market conditions do not meet criteria.'
-                    ]);
-                }
-
-                return redirect()->route('admin.signals.index')
-                    ->with('info', 'No signals generated. Market conditions do not meet criteria.');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No signals generated. Market conditions do not meet criteria.'
+                ]);
             }
 
+            // Sort by confidence (highest first)
             usort($signalsData, function($a, $b) {
                 return $b['confidence'] <=> $a['confidence'];
             });
             
+            // Store top N signals
             $signalsData = array_slice($signalsData, 0, $topSignalsCount);
 
             Log::info('[SignalController] Creating ' . count($signalsData) . ' signals in database');
@@ -220,9 +223,12 @@ class SignalController extends Controller
             $executedCount = 0;
             
             if ($autoExecute) {
-                Log::info('[SignalController] Auto-execute enabled, executing signals');
+                Log::info('[SignalController] Auto-execute enabled, executing top ' . $autoExecuteCount . ' signals');
                 
-                foreach ($createdSignals as $signal) {
+                // Execute only the top M signals
+                $signalsToExecute = array_slice($createdSignals, 0, $autoExecuteCount);
+                
+                foreach ($signalsToExecute as $signal) {
                     try {
                         $orderType = $signal->order_type ?? Setting::get('signal_order_type', 'Market');
                         
@@ -262,7 +268,14 @@ class SignalController extends Controller
                         ]);
                     }
                 }
+                
+                // Mark remaining signals as active (not executed)
+                $remainingSignals = array_slice($createdSignals, $autoExecuteCount);
+                foreach ($remainingSignals as $signal) {
+                    $signal->update(['status' => 'active']);
+                }
             } else {
+                // Mark all signals as active for manual execution
                 foreach ($createdSignals as $signal) {
                     $signal->update(['status' => 'active']);
                 }
@@ -270,7 +283,7 @@ class SignalController extends Controller
 
             $message = count($createdSignals) . ' signal(s) generated successfully!';
             if ($autoExecute && $executedCount > 0) {
-                $message .= " {$executedCount} executed automatically.";
+                $message .= " Top {$executedCount} executed automatically.";
             }
 
             Log::info('[SignalController] Signal generation completed', [
@@ -278,17 +291,12 @@ class SignalController extends Controller
                 'executed' => $executedCount,
             ]);
 
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => $message,
-                    'count' => count($createdSignals),
-                    'executed' => $executedCount,
-                ]);
-            }
-
-            return redirect()->route('admin.signals.index')
-                ->with('success', $message);
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'count' => count($createdSignals),
+                'executed' => $executedCount,
+            ]);
                 
         } catch (\Exception $e) {
             Log::error('[SignalController] Signal generation failed', [
@@ -298,15 +306,10 @@ class SignalController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Signal generation failed: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return redirect()->route('admin.signals.index')
-                ->with('error', 'Signal generation failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Signal generation failed: ' . $e->getMessage()
+            ], 500);
         }
     }
 

@@ -19,8 +19,8 @@ class SettingsSeeder extends Seeder
             // ============================================
             
             // Schedule Configuration
-            ['key' => 'signal_interval', 'value' => '15', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Signal generation interval in minutes'],
-            ['key' => 'signal_top_count', 'value' => '5', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Number of top signals to execute'],
+            ['key' => 'signal_interval', 'value' => '240', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Signal generation interval in minutes'],
+            ['key' => 'signal_top_count', 'value' => '10', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Number of top signals to generate'],
             ['key' => 'signal_min_confidence', 'value' => '70', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Minimum confidence threshold'],
             ['key' => 'signal_expiry', 'value' => '30', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Signal expiry time in minutes'],
             

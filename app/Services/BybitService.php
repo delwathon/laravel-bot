@@ -84,26 +84,49 @@ class BybitService
                 $this->setLeverage($symbol, $leverage);
             }
             
+            // Get instrument info to validate and adjust quantity
+            $instrumentInfo = $this->getInstrumentInfo($symbol);
+            
+            // Adjust quantity to meet Bybit's requirements
+            $adjustedQty = $this->adjustQuantity($qty, $instrumentInfo);
+            
+            // Adjust prices to meet tick size requirements
+            $adjustedPrice = $price ? $this->adjustPrice($price, $instrumentInfo) : null;
+            $adjustedStopLoss = $stopLoss ? $this->adjustPrice($stopLoss, $instrumentInfo) : null;
+            $adjustedTakeProfit = $takeProfit ? $this->adjustPrice($takeProfit, $instrumentInfo) : null;
+            
             $timestamp = round(microtime(true) * 1000);
             $params = [
                 'category' => 'linear',
                 'symbol' => $symbol,
                 'side' => ucfirst(strtolower($side)), // Buy or Sell
                 'orderType' => $orderType,
-                'qty' => (string) $qty,
+                'qty' => (string) $adjustedQty,
                 'timeInForce' => $orderType === 'Market' ? 'IOC' : 'GTC',
             ];
+
+            Log::info("Placing Bybit order", [
+                'symbol' => $symbol,
+                'side' => $side,
+                'original_qty' => $qty,
+                'adjusted_qty' => $adjustedQty,
+                'orderType' => $orderType,
+                'price' => $adjustedPrice,
+                'stopLoss' => $adjustedStopLoss,
+                'takeProfit' => $adjustedTakeProfit,
+                'leverage' => $leverage,
+            ]);
             
-            if ($price && $orderType === 'Limit') {
-                $params['price'] = (string) $price;
+            if ($adjustedPrice && $orderType === 'Limit') {
+                $params['price'] = (string) $adjustedPrice;
             }
             
-            if ($stopLoss) {
-                $params['stopLoss'] = (string) $stopLoss;
+            if ($adjustedStopLoss) {
+                $params['stopLoss'] = (string) $adjustedStopLoss;
             }
             
-            if ($takeProfit) {
-                $params['takeProfit'] = (string) $takeProfit;
+            if ($adjustedTakeProfit) {
+                $params['takeProfit'] = (string) $adjustedTakeProfit;
             }
             
             $response = $this->signedRequest('POST', '/v5/order/create', $params, $timestamp);
@@ -386,9 +409,18 @@ class BybitService
         return null;
     }
 
+    /**
+     * Get klines/candlestick data using signed request
+     * 
+     * @param string $symbol
+     * @param string $interval
+     * @param int $limit
+     * @return array
+     */
     public function getKlines($symbol, $interval = '15', $limit = 200)
     {
         try {
+            $timestamp = round(microtime(true) * 1000);
             $params = [
                 'category' => 'linear',
                 'symbol' => $symbol,
@@ -396,35 +428,34 @@ class BybitService
                 'limit' => $limit,
             ];
             
-            $response = Http::get($this->baseUrl . '/v5/market/kline', $params);
+            $response = $this->signedRequest('GET', '/v5/market/kline', $params, $timestamp);
             
-            if ($response->successful()) {
-                $data = $response->json();
-                return $data['result']['list'] ?? [];
-            }
-            
-            return [];
+            return $response['result']['list'] ?? [];
         } catch (\Exception $e) {
             Log::error('Failed to get klines: ' . $e->getMessage());
             throw $e;
         }
     }
 
+    /**
+     * Get current price for a symbol using signed request
+     * 
+     * @param string $symbol
+     * @return float|null
+     */
     public function getCurrentPrice($symbol)
     {
         try {
+            $timestamp = round(microtime(true) * 1000);
             $params = [
                 'category' => 'linear',
                 'symbol' => $symbol,
             ];
             
-            $response = Http::get($this->baseUrl . '/v5/market/tickers', $params);
+            $response = $this->signedRequest('GET', '/v5/market/tickers', $params, $timestamp);
             
-            if ($response->successful()) {
-                $data = $response->json();
-                if (isset($data['result']['list'][0]['lastPrice'])) {
-                    return (float) $data['result']['list'][0]['lastPrice'];
-                }
+            if (isset($response['result']['list'][0]['lastPrice'])) {
+                return (float) $response['result']['list'][0]['lastPrice'];
             }
             
             return null;
@@ -443,19 +474,14 @@ class BybitService
     public function getHighVolumeTradingPairs($minVolume = 5000000)
     {
         try {
+            $timestamp = round(microtime(true) * 1000);
             $params = [
                 'category' => 'linear',
             ];
             
-            $response = Http::get($this->baseUrl . '/v5/market/tickers', $params);
+            $response = $this->signedRequest('GET', '/v5/market/tickers', $params, $timestamp);
             
-            if (!$response->successful()) {
-                Log::error('Failed to fetch tickers from Bybit');
-                return [];
-            }
-            
-            $data = $response->json();
-            $tickers = $data['result']['list'] ?? [];
+            $tickers = $response['result']['list'] ?? [];
             
             $validPairs = [];
             
@@ -491,6 +517,144 @@ class BybitService
             Log::error('Failed to get high volume trading pairs: ' . $e->getMessage());
             return [];
         }
+    }
+
+    /**
+     * Get instrument information for a symbol
+     * Used to fetch quantity and price rules
+     * 
+     * @param string $symbol
+     * @return array
+     */
+    public function getInstrumentInfo($symbol)
+    {
+        try {
+            $timestamp = round(microtime(true) * 1000);
+            $params = [
+                'category' => 'linear',
+                'symbol' => $symbol,
+            ];
+            
+            $response = $this->signedRequest('GET', '/v5/market/instruments-info', $params, $timestamp);
+            
+            if (isset($response['result']['list'][0])) {
+                $info = $response['result']['list'][0];
+                
+                return [
+                    'symbol' => $info['symbol'],
+                    'minOrderQty' => (float) ($info['lotSizeFilter']['minOrderQty'] ?? 0.001),
+                    'maxOrderQty' => (float) ($info['lotSizeFilter']['maxOrderQty'] ?? 1000000),
+                    'qtyStep' => (float) ($info['lotSizeFilter']['qtyStep'] ?? 0.001),
+                    'tickSize' => (float) ($info['priceFilter']['tickSize'] ?? 0.01),
+                    'minPrice' => (float) ($info['priceFilter']['minPrice'] ?? 0.01),
+                    'maxPrice' => (float) ($info['priceFilter']['maxPrice'] ?? 1000000),
+                ];
+            }
+            
+            // Default fallback values
+            return [
+                'symbol' => $symbol,
+                'minOrderQty' => 0.001,
+                'maxOrderQty' => 1000000,
+                'qtyStep' => 0.001,
+                'tickSize' => 0.01,
+                'minPrice' => 0.01,
+                'maxPrice' => 1000000,
+            ];
+            
+        } catch (\Exception $e) {
+            Log::error("Failed to get instrument info for {$symbol}: " . $e->getMessage());
+            
+            // Return safe defaults
+            return [
+                'symbol' => $symbol,
+                'minOrderQty' => 0.001,
+                'maxOrderQty' => 1000000,
+                'qtyStep' => 0.001,
+                'tickSize' => 0.01,
+                'minPrice' => 0.01,
+                'maxPrice' => 1000000,
+            ];
+        }
+    }
+
+    /**
+     * Adjust quantity to meet Bybit's lot size requirements
+     * 
+     * @param float $quantity
+     * @param array $instrumentInfo
+     * @return float
+     */
+    protected function adjustQuantity($quantity, $instrumentInfo)
+    {
+        $minQty = $instrumentInfo['minOrderQty'];
+        $maxQty = $instrumentInfo['maxOrderQty'];
+        $qtyStep = $instrumentInfo['qtyStep'];
+        
+        // Ensure quantity is within min/max bounds
+        if ($quantity < $minQty) {
+            Log::warning("Quantity {$quantity} is below minimum {$minQty}, adjusting to minimum");
+            $quantity = $minQty;
+        }
+        
+        if ($quantity > $maxQty) {
+            Log::warning("Quantity {$quantity} exceeds maximum {$maxQty}, adjusting to maximum");
+            $quantity = $maxQty;
+        }
+        
+        // Round to nearest valid step
+        $adjusted = floor($quantity / $qtyStep) * $qtyStep;
+        
+        // Ensure we didn't round below minimum
+        if ($adjusted < $minQty) {
+            $adjusted = $minQty;
+        }
+        
+        // Get decimal places from qtyStep
+        $decimals = strlen(substr(strrchr((string)$qtyStep, "."), 1));
+        $adjusted = round($adjusted, $decimals);
+        
+        Log::debug("Quantity adjusted", [
+            'original' => $quantity,
+            'adjusted' => $adjusted,
+            'minQty' => $minQty,
+            'maxQty' => $maxQty,
+            'qtyStep' => $qtyStep,
+        ]);
+        
+        return $adjusted;
+    }
+
+    /**
+     * Adjust price to meet Bybit's tick size requirements
+     * 
+     * @param float $price
+     * @param array $instrumentInfo
+     * @return float
+     */
+    protected function adjustPrice($price, $instrumentInfo)
+    {
+        $tickSize = $instrumentInfo['tickSize'];
+        $minPrice = $instrumentInfo['minPrice'];
+        $maxPrice = $instrumentInfo['maxPrice'];
+        
+        // Ensure price is within bounds
+        if ($price < $minPrice) {
+            $price = $minPrice;
+        }
+        
+        if ($price > $maxPrice) {
+            $price = $maxPrice;
+        }
+        
+        // Round to nearest tick size
+        $adjusted = round($price / $tickSize) * $tickSize;
+        
+        // Get decimal places from tickSize
+        $decimals = strlen(substr(strrchr((string)$tickSize, "."), 1));
+        $adjusted = round($adjusted, $decimals);
+        
+        return $adjusted;
     }
 
     protected function signedRequest($method, $endpoint, $params = [], $timestamp = null)

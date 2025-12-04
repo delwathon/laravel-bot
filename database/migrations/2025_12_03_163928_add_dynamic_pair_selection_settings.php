@@ -26,6 +26,20 @@ return new class extends Migration
                 'type' => 'integer',
                 'description' => 'Minimum 24h trading volume in USDT for pair selection'
             ],
+            [
+                'key' => 'signal_auto_execute_count',
+                'value' => '3',
+                'group' => 'signal_generator',
+                'type' => 'integer',
+                'description' => 'Number of signals to auto-execute'
+            ],
+            [
+                'key' => 'signal_max_pairs',
+                'value' => '50',
+                'group' => 'signal_generator',
+                'type' => 'integer',
+                'description' => 'Number of signals to analyze for dynamic pair selection'
+            ],
         ];
 
         foreach ($settings as $setting) {

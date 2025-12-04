@@ -143,6 +143,67 @@ if ($tradingEnabled) {
         ->withoutOverlapping(5);
 }
 
+/**
+ * Cleanup Stale Pending Orders - Every Hour
+ * Cancels pending orders older than configured threshold
+ */
+Schedule::call(function () {
+    if (!Setting::get('signal_cancel_stale_pending', true)) {
+        Log::debug('[Cleanup] Stale order cleanup disabled');
+        return; // Feature disabled
+    }
+    
+    $staleHours = (int) Setting::get('signal_stale_order_hours', 24);
+    
+    Log::info('[Cleanup] Starting stale order cleanup', [
+        'stale_threshold' => $staleHours . 'h'
+    ]);
+    
+    $staleOrders = \App\Models\Trade::where('status', 'pending')
+        ->where('created_at', '<=', now()->subHours($staleHours))
+        ->with('user')
+        ->get();
+    
+    if ($staleOrders->isEmpty()) {
+        Log::debug('[Cleanup] No stale pending orders found');
+        return;
+    }
+    
+    Log::info("[Cleanup] Found {$staleOrders->count()} stale pending orders");
+    
+    // Group by symbol for efficient cancellation
+    $bySymbol = $staleOrders->groupBy('symbol');
+    
+    $totalCancelled = 0;
+    $totalFailed = 0;
+    
+    foreach ($bySymbol as $symbol => $orders) {
+        try {
+            Log::info("[Cleanup] Processing stale orders for {$symbol}", [
+                'count' => $orders->count()
+            ]);
+            
+            $service = app(\App\Services\TradePropagationService::class);
+            $results = $service->cancelAllPendingOrdersBySymbol($symbol);
+            
+            $totalCancelled += $results['cancelled'];
+            $totalFailed += $results['failed'];
+            
+            Log::info("[Cleanup] Cancelled stale orders for {$symbol}", $results);
+        } catch (\Exception $e) {
+            Log::error("[Cleanup] Failed to cancel stale orders for {$symbol}: " . $e->getMessage());
+            $totalFailed += $orders->count();
+        }
+    }
+    
+    Log::info('[Cleanup] Stale order cleanup completed', [
+        'total_cancelled' => $totalCancelled,
+        'total_failed' => $totalFailed
+    ]);
+})
+    ->hourly()
+    ->name('cleanup-stale-orders');
+
 // ==========================================
 // ANALYTICS & REPORTING
 // ==========================================

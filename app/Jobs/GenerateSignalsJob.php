@@ -179,9 +179,10 @@ class GenerateSignalsJob implements ShouldQueue
                 
                 // Check stop loss percentage
                 $slPercent = abs(($signal['entry_price'] - $signal['stop_loss']) / $signal['entry_price']) * 100;
+                
                 if ($slPercent > $maxStopLossPercent) {
                     if ($logAnalysis) {
-                        Log::debug("[GenerateSignalsJob] Signal rejected: SL {$slPercent}% > {$maxStopLossPercent}%", [
+                        Log::debug("[GenerateSignalsJob] Signal rejected: SL% {$slPercent} > {$maxStopLossPercent}", [
                             'symbol' => $signal['symbol'],
                             'pattern' => $signal['pattern']
                         ]);
@@ -260,8 +261,58 @@ class GenerateSignalsJob implements ShouldQueue
             if ($autoExecute) {
                 Log::info('[GenerateSignalsJob] Auto-execute enabled, processing signals');
                 
+                $executedCount = 0;
+                $skippedCount = 0;
+                $cancelledOrdersTotal = 0;
+                $closedPositionsTotal = 0;
+                
                 foreach ($storedSignals as $signal) {
                     try {
+                        Log::info("[GenerateSignalsJob] Checking conflicts for signal {$signal->id}");
+                        
+                        // Check admin conflicts FIRST
+                        $conflictCheck = $tradePropagation->checkAdminConflicts($signal);
+                        
+                        if ($conflictCheck['action'] === 'skip') {
+                            Log::warning("[GenerateSignalsJob] Signal {$signal->id} skipped", [
+                                'reason' => $conflictCheck['reason']
+                            ]);
+                            
+                            $signal->update([
+                                'status' => 'skipped',
+                                'notes' => $conflictCheck['reason']
+                            ]);
+                            
+                            $skippedCount++;
+                            continue;
+                        }
+                        
+                        if ($conflictCheck['action'] === 'cancel_and_execute') {
+                            Log::info("[GenerateSignalsJob] Cancelling existing orders for signal {$signal->id}");
+                            
+                            $cancelResults = $tradePropagation->cancelAllPendingOrdersBySymbol($signal->symbol);
+                            $cancelledOrdersTotal += $cancelResults['cancelled'];
+                            
+                            Log::info("[GenerateSignalsJob] Cancelled {$cancelResults['cancelled']} orders");
+                            
+                            $signal->update([
+                                'notes' => "Cancelled {$cancelResults['cancelled']} existing orders. " . $conflictCheck['reason']
+                            ]);
+                        }
+                        
+                        if ($conflictCheck['action'] === 'close_and_execute') {
+                            Log::info("[GenerateSignalsJob] Closing existing positions for signal {$signal->id}");
+                            
+                            $closeResults = $tradePropagation->closeAllPositionsBySymbol($signal->symbol);
+                            $closedPositionsTotal += $closeResults['closed'];
+                            
+                            Log::info("[GenerateSignalsJob] Closed {$closeResults['closed']} positions");
+                            
+                            $signal->update([
+                                'notes' => "Closed {$closeResults['closed']} existing positions. " . $conflictCheck['reason']
+                            ]);
+                        }
+                        
                         Log::info("[GenerateSignalsJob] Attempting to execute signal {$signal->id}");
                         
                         // Execute admin trade FIRST
@@ -310,6 +361,8 @@ class GenerateSignalsJob implements ShouldQueue
                             'executed_at' => now(),
                         ]);
                         
+                        $executedCount++;
+                        
                         Log::info("[GenerateSignalsJob] Signal {$signal->id} marked as executed");
                         
                         // Send notifications if enabled
@@ -332,6 +385,15 @@ class GenerateSignalsJob implements ShouldQueue
                         ]);
                     }
                 }
+                
+                Log::info('[GenerateSignalsJob] Auto-execution summary', [
+                    'total_signals' => count($storedSignals),
+                    'executed' => $executedCount,
+                    'skipped' => $skippedCount,
+                    'cancelled_orders' => $cancelledOrdersTotal,
+                    'closed_positions' => $closedPositionsTotal,
+                ]);
+                
             } else {
                 Log::info('[GenerateSignalsJob] Auto-execute disabled. Signals marked as active for manual execution.');
                 

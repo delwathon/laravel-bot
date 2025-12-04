@@ -93,6 +93,7 @@ class SignalController extends Controller
             'pending_signals' => Signal::where('status', 'pending')->count(),
             'executed_signals' => Signal::where('status', 'executed')->count(),
             'expired_signals' => Signal::where('status', 'expired')->count(),
+            'skipped_signals' => Signal::where('status', 'skipped')->count(),
             'avg_confidence' => Signal::whereDate('created_at', '>=', now()->subDays(7))
                 ->avg('confidence') ?? 0,
             'success_rate' => $this->calculateSuccessRate(),
@@ -138,6 +139,7 @@ class SignalController extends Controller
                 'timeframe' => $signal->timeframe,
                 'created_at' => $signal->created_at->toIso8601String(),
                 'trades_count' => $signal->trades->count(),
+                'notes' => $signal->notes,
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to load signal details: ' . $e->getMessage(), [
@@ -171,9 +173,9 @@ class SignalController extends Controller
             
             $timeframe = Setting::get('signal_primary_timeframe', '15');
             $minConfidence = (int) Setting::get('signal_min_confidence', 70);
-            $topSignalsCount = (int) Setting::get('signal_top_count', 10); // Store top 10
+            $topSignalsCount = (int) Setting::get('signal_top_count', 10);
             $autoExecute = (bool) Setting::get('signal_auto_execute', true);
-            $autoExecuteCount = (int) Setting::get('signal_auto_execute_count', 3); // Execute only top 3
+            $autoExecuteCount = (int) Setting::get('signal_auto_execute_count', 3);
 
             Log::info('[SignalController] Signal generation settings', [
                 'use_dynamic_pairs' => $useDynamicPairs,
@@ -216,55 +218,115 @@ class SignalController extends Controller
                     'symbol' => $signal->symbol,
                     'type' => $signal->type,
                     'confidence' => $signal->confidence,
-                    'order_type' => $signal->order_type ?? 'Market',
+                    'order_type' => $signal->order_type,
                 ]);
             }
 
             $executedCount = 0;
-            
+            $skippedCount = 0;
+            $cancelledOrdersTotal = 0;
+            $closedPositionsTotal = 0;
+
             if ($autoExecute) {
-                Log::info('[SignalController] Auto-execute enabled, executing top ' . $autoExecuteCount . ' signals');
+                Log::info('[SignalController] Auto-execute enabled, processing top signals');
                 
-                // Execute only the top M signals
                 $signalsToExecute = array_slice($createdSignals, 0, $autoExecuteCount);
                 
                 foreach ($signalsToExecute as $signal) {
                     try {
-                        $orderType = $signal->order_type ?? Setting::get('signal_order_type', 'Market');
+                        Log::info("[SignalController] Checking conflicts for signal {$signal->id}");
                         
+                        // Check admin conflicts FIRST
+                        $conflictCheck = $this->tradePropagation->checkAdminConflicts($signal);
+                        
+                        if ($conflictCheck['action'] === 'skip') {
+                            Log::warning("[SignalController] Signal {$signal->id} skipped", [
+                                'reason' => $conflictCheck['reason']
+                            ]);
+                            
+                            $signal->update([
+                                'status' => 'skipped',
+                                'notes' => $conflictCheck['reason']
+                            ]);
+                            
+                            $skippedCount++;
+                            continue;
+                        }
+                        
+                        if ($conflictCheck['action'] === 'cancel_and_execute') {
+                            Log::info("[SignalController] Cancelling existing orders for signal {$signal->id}");
+                            
+                            $cancelResults = $this->tradePropagation->cancelAllPendingOrdersBySymbol($signal->symbol);
+                            $cancelledOrdersTotal += $cancelResults['cancelled'];
+                            
+                            Log::info("[SignalController] Cancelled {$cancelResults['cancelled']} orders");
+                            
+                            $signal->update([
+                                'notes' => "Cancelled {$cancelResults['cancelled']} existing orders. " . $conflictCheck['reason']
+                            ]);
+                        }
+                        
+                        if ($conflictCheck['action'] === 'close_and_execute') {
+                            Log::info("[SignalController] Closing existing positions for signal {$signal->id}");
+                            
+                            $closeResults = $this->tradePropagation->closeAllPositionsBySymbol($signal->symbol);
+                            $closedPositionsTotal += $closeResults['closed'];
+                            
+                            Log::info("[SignalController] Closed {$closeResults['closed']} positions");
+                            
+                            $signal->update([
+                                'notes' => "Closed {$closeResults['closed']} existing positions. " . $conflictCheck['reason']
+                            ]);
+                        }
+                        
+                        Log::info("[SignalController] Attempting to execute signal {$signal->id}");
+                        
+                        // Execute admin trade FIRST
                         $adminResult = $this->tradePropagation->executeAdminTrade(
                             $signal, 
                             Setting::get('signal_position_size', 5),
-                            $orderType
+                            $signal->order_type ?? Setting::get('signal_order_type', 'Market')
                         );
                         
-                        if ($adminResult['success']) {
-                            $userResults = $this->tradePropagation->propagateSignalToAllUsers($signal, $orderType);
-
-                            $signal->update([
-                                'status' => 'executed',
-                                'executed_at' => now(),
-                            ]);
-                            
-                            $executedCount++;
-                            
-                            Log::info('[SignalController] Signal executed successfully', [
-                                'signal_id' => $signal->id,
-                                'users_successful' => $userResults['successful'],
-                                'users_failed' => $userResults['failed'],
-                            ]);
-                        } else {
-                            Log::error('[SignalController] Failed to execute admin trade', [
-                                'signal_id' => $signal->id,
+                        if (!$adminResult['success']) {
+                            Log::error("[SignalController] Admin execution failed for signal {$signal->id}", [
                                 'error' => $adminResult['error']
                             ]);
                             
                             $signal->update(['status' => 'failed']);
+                            continue;
                         }
+                        
+                        // Admin succeeded - propagate to users
+                        Log::info("[SignalController] Admin execution successful, propagating to users");
+                        
+                        $userResults = $this->tradePropagation->propagateSignalToAllUsers(
+                            $signal, 
+                            $signal->order_type ?? Setting::get('signal_order_type', 'Market')
+                        );
+                        
+                        Log::info("[SignalController] Signal {$signal->id} executed", [
+                            'users_successful' => $userResults['successful'],
+                            'users_failed' => $userResults['failed'],
+                        ]);
+
+                        $signal->update([
+                            'status' => 'executed',
+                            'executed_at' => now(),
+                        ]);
+                        
+                        $executedCount++;
+                        
                     } catch (\Exception $e) {
-                        Log::error('[SignalController] Signal execution exception', [
-                            'signal_id' => $signal->id,
-                            'error' => $e->getMessage()
+                        Log::error("[SignalController] Signal execution exception for signal {$signal->id}", [
+                            'error' => $e->getMessage(),
+                            'file' => $e->getFile(),
+                            'line' => $e->getLine()
+                        ]);
+                        
+                        $signal->update([
+                            'status' => 'failed',
+                            'notes' => 'Execution error: ' . $e->getMessage()
                         ]);
                     }
                 }
@@ -282,13 +344,26 @@ class SignalController extends Controller
             }
 
             $message = count($createdSignals) . ' signal(s) generated successfully!';
-            if ($autoExecute && $executedCount > 0) {
-                $message .= " Top {$executedCount} executed automatically.";
+            
+            if ($autoExecute) {
+                $message .= " {$executedCount} executed";
+                if ($skippedCount > 0) {
+                    $message .= ", {$skippedCount} skipped";
+                }
+                if ($cancelledOrdersTotal > 0) {
+                    $message .= " (cancelled {$cancelledOrdersTotal} stale orders)";
+                }
+                if ($closedPositionsTotal > 0) {
+                    $message .= " (closed {$closedPositionsTotal} opposite positions)";
+                }
             }
 
             Log::info('[SignalController] Signal generation completed', [
                 'generated' => count($createdSignals),
                 'executed' => $executedCount,
+                'skipped' => $skippedCount,
+                'cancelled_orders' => $cancelledOrdersTotal,
+                'closed_positions' => $closedPositionsTotal,
             ]);
 
             return response()->json([
@@ -296,6 +371,9 @@ class SignalController extends Controller
                 'message' => $message,
                 'count' => count($createdSignals),
                 'executed' => $executedCount,
+                'skipped' => $skippedCount,
+                'cancelled_orders' => $cancelledOrdersTotal,
+                'closed_positions' => $closedPositionsTotal,
             ]);
                 
         } catch (\Exception $e) {
@@ -330,6 +408,52 @@ class SignalController extends Controller
                 'order_type' => $orderType,
             ]);
             
+            // Check admin conflicts FIRST
+            $conflictCheck = $this->tradePropagation->checkAdminConflicts($signal);
+            
+            if ($conflictCheck['action'] === 'skip') {
+                Log::warning("[SignalController] Manual execution skipped", [
+                    'signal_id' => $signal->id,
+                    'reason' => $conflictCheck['reason']
+                ]);
+                
+                $signal->update([
+                    'status' => 'skipped',
+                    'notes' => $conflictCheck['reason']
+                ]);
+                
+                return back()->with('warning', $conflictCheck['reason']);
+            }
+            
+            $cancelledOrders = 0;
+            $closedPositions = 0;
+            
+            if ($conflictCheck['action'] === 'cancel_and_execute') {
+                Log::info("[SignalController] Cancelling existing orders before execution");
+                
+                $cancelResults = $this->tradePropagation->cancelAllPendingOrdersBySymbol($signal->symbol);
+                $cancelledOrders = $cancelResults['cancelled'];
+                
+                Log::info("[SignalController] Cancelled {$cancelledOrders} orders");
+                
+                $signal->update([
+                    'notes' => "Cancelled {$cancelledOrders} existing orders. " . $conflictCheck['reason']
+                ]);
+            }
+            
+            if ($conflictCheck['action'] === 'close_and_execute') {
+                Log::info("[SignalController] Closing existing positions before execution");
+                
+                $closeResults = $this->tradePropagation->closeAllPositionsBySymbol($signal->symbol);
+                $closedPositions = $closeResults['closed'];
+                
+                Log::info("[SignalController] Closed {$closedPositions} positions");
+                
+                $signal->update([
+                    'notes' => "Closed {$closedPositions} existing positions. " . $conflictCheck['reason']
+                ]);
+            }
+            
             $adminResult = $this->tradePropagation->executeAdminTrade(
                 $signal, 
                 Setting::get('signal_position_size', 5),
@@ -348,11 +472,21 @@ class SignalController extends Controller
             ]);
 
             $message = "Signal executed: Admin + {$userResults['successful']} users successful, {$userResults['failed']} failed out of {$userResults['total']} users.";
+            
+            if ($cancelledOrders > 0) {
+                $message .= " Cancelled {$cancelledOrders} stale orders.";
+            }
+            
+            if ($closedPositions > 0) {
+                $message .= " Closed {$closedPositions} opposite positions.";
+            }
 
             Log::info('[SignalController] Signal execution completed', [
                 'signal_id' => $signal->id,
                 'users_successful' => $userResults['successful'],
                 'users_failed' => $userResults['failed'],
+                'cancelled_orders' => $cancelledOrders,
+                'closed_positions' => $closedPositions,
             ]);
 
             return redirect()->route('admin.signals.index')
@@ -446,7 +580,8 @@ class SignalController extends Controller
                 'Risk/Reward',
                 'Timeframe',
                 'Status',
-                'Executed At'
+                'Executed At',
+                'Notes'
             ]);
 
             foreach ($signals as $signal) {
@@ -463,7 +598,8 @@ class SignalController extends Controller
                     '1:' . $signal->risk_reward_ratio,
                     $signal->timeframe,
                     $signal->status,
-                    $signal->executed_at ? $signal->executed_at->toDateTimeString() : ''
+                    $signal->executed_at ? $signal->executed_at->toDateTimeString() : '',
+                    $signal->notes ?? ''
                 ]);
             }
 

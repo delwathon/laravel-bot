@@ -16,6 +16,8 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             SettingsSeeder::class,
             ExchangeAccountsSeeder::class,
+            ConflictManagementSettingsSeeder::class,
+            ProfitMilestonesSettingsSeeder::class,
         ]);
     }
 }

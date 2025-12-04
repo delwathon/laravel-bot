@@ -85,7 +85,7 @@ class SettingsController extends Controller
                     'api_key' => $validated['api_key'],
                     'api_secret' => $validated['api_secret'],
                     'is_active' => true,
-                    'is_admin' => true,  // ← ADD THIS
+                    'is_admin' => true,
                     'last_synced_at' => now(),
                 ]
             );
@@ -175,120 +175,164 @@ class SettingsController extends Controller
     {
         $settings = Setting::getGroup('signal_generator');
         
-        // Set defaults if not exists
+        // Load defaults if not set
         if (empty($settings)) {
             $settings = [
-                'signal_interval' => 15,
-                'signal_top_count' => 5,
+                // Schedule Configuration
+                'signal_interval' => 30,
+                'signal_top_count' => 10,
                 'signal_min_confidence' => 70,
                 'signal_expiry' => 30,
-                'signal_pairs' => ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT'],
-                'signal_primary_timeframe' => '15m',
-                'signal_higher_timeframe' => '1h',
+                'signal_auto_execute' => true,
+                'signal_auto_execute_count' => 3,
+                
+                // Trading Pairs Configuration
+                'signal_use_dynamic_pairs' => true,
+                'signal_min_volume' => 5000000,
+                'signal_max_pairs' => 50,
+                'signal_pairs' => ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT', 'ADAUSDT', 'DOGEUSDT', 'TRXUSDT', 'MATICUSDT', 'DOTUSDT', 'LTCUSDT', 'LINKUSDT', 'AVAXUSDT', 'UNIUSDT', 'ATOMUSDT', 'XLMUSDT', 'FILUSDT', 'ETCUSDT', 'NEARUSDT', 'APTUSDT', 'ICPUSDT', 'ARBUSDT', 'OPUSDT', 'LDOUSDT', 'INJUSDT', 'STXUSDT', 'TIAUSDT', 'SUIUSDT', 'SEIUSDT', 'RENDERUSDT', 'RNDRUSDT', 'ALGOUSDT', 'VETUSDT', 'AAVEUSDT', 'SUSHIUSDT', 'PEPEUSDT', 'WIFUSDT', 'BONKUSDT', 'FLOKIUSDT', 'SHIBUSDT', 'FTMUSDT', 'SANDUSDT', 'MANAUSDT', 'AXSUSDT', 'GALAUSDT', 'ENJUSDT', 'CHZUSDT', 'GMTUSDT', 'APEUSDT', 'BLURUSDT'],
+                
+                // Timeframes
+                'signal_primary_timeframe' => '240',
+                'signal_higher_timeframe' => 'D',
+                
+                // SMC Pattern Detection
                 'signal_patterns' => ['order_block', 'fvg', 'bos', 'choch', 'liquidity_sweep', 'premium_discount'],
+                
+                // Analysis Parameters
                 'signal_lookback_periods' => 50,
                 'signal_pattern_strength' => 3,
+                
+                // Risk Management
                 'signal_risk_reward' => '1:2',
-                'signal_max_sl' => 2,
-                'signal_position_size' => 5,
+                'signal_max_sl' => 5.0,
+                'signal_position_size' => 5.0,
                 'signal_leverage' => 'Max',
+                
+                // Order Type
+                'signal_order_type' => 'Market',
+                
+                // Exchange Configuration
                 'signal_exchanges' => ['bybit'],
-                'signal_auto_execute' => true,
+                
+                // Advanced Options
                 'signal_notify_users' => true,
                 'signal_log_analysis' => true,
                 'signal_test_mode' => false,
+                
+                // Conflict Management
+                'signal_stale_order_hours' => 24,
+                'signal_skip_duplicate_positions' => true,
+                'signal_cancel_opposite_pending' => true,
+                'signal_cancel_stale_pending' => true,
+                'signal_close_opposite_positions' => false,
             ];
         }
         
         return view('admin.settings.signal-generator', compact('settings'));
     }
-    
+
     public function updateSignalGenerator(Request $request)
     {
-        // Log all incoming data for debugging
-        Log::info('Signal Generator Update - Incoming Data', $request->all());
-        
         $validated = $request->validate([
             // Schedule Configuration
-            'interval' => 'required|integer|min:5|max:240',
-            'top_signals' => 'required|integer|min:1|max:20',
-            'min_confidence' => 'required|integer|min:50|max:95',
-            'signal_expiry' => 'required|integer|min:5|max:1440',
+            'signal_interval' => 'required|integer|min:5|max:1440',
+            'signal_top_count' => 'required|integer|min:1|max:50',
+            'signal_min_confidence' => 'required|integer|min:50|max:95',
+            'signal_expiry' => 'required|integer|min:5|max:180',
+            'signal_auto_execute' => 'nullable|string',
+            'signal_auto_execute_count' => 'required|integer|min:1|max:20',
             
-            // Trading Pairs
-            'pairs' => 'nullable|array',
-            'pairs.*' => 'nullable|string',
+            // Trading Pairs Configuration
+            'signal_use_dynamic_pairs' => 'nullable|string',
+            'signal_min_volume' => 'required|integer|min:100000',
+            'signal_max_pairs' => 'required|integer|min:5|max:200',
+            'signal_pairs' => 'nullable|array',
             
             // Timeframes
-            'primary_timeframe' => 'required|string',
-            'higher_timeframe' => 'required|string',
+            'signal_primary_timeframe' => 'required|string',
+            'signal_higher_timeframe' => 'required|string',
             
             // SMC Pattern Detection
-            'patterns' => 'nullable|array',
-            'patterns.*' => 'nullable|string',
+            'signal_patterns' => 'nullable|array',
             
             // Analysis Parameters
-            'lookback_periods' => 'required|integer|min:10|max:200',
-            'pattern_strength' => 'required|integer|min:1|max:5',
+            'signal_lookback_periods' => 'required|integer|min:20|max:500',
+            'signal_pattern_strength' => 'required|integer|min:1|max:5',
             
             // Risk Management
-            'risk_reward' => 'required|string',
-            'max_sl' => 'required|numeric|min:0.5|max:10',
-            'position_size' => 'required|integer|min:1|max:10',
-            'leverage' => 'required|string',
+            'signal_risk_reward' => 'required|string',
+            'signal_max_sl' => 'required|numeric|min:0.5|max:10',
+            'signal_position_size' => 'required|numeric|min:1|max:100',
+            'signal_leverage' => 'required|string',
+            
+            // Order Type
+            'signal_order_type' => 'required|in:Market,Limit',
             
             // Exchange Configuration
-            'exchanges' => 'nullable|array',
-            'exchanges.*' => 'nullable|string',
+            'signal_exchanges' => 'nullable|array',
             
-            // Advanced Options (checkboxes)
-            'auto_execute' => 'nullable|string',
-            'notify_users' => 'nullable|string',
-            'log_analysis' => 'nullable|string',
-            'test_mode' => 'nullable|string',
+            // Advanced Options
+            'signal_notify_users' => 'nullable|string',
+            'signal_log_analysis' => 'nullable|string',
+            'signal_test_mode' => 'nullable|string',
+            
+            // Conflict Management
+            'signal_stale_order_hours' => 'required|integer|min:1|max:168',
+            'signal_skip_duplicate_positions' => 'nullable|string',
+            'signal_cancel_opposite_pending' => 'nullable|string',
+            'signal_cancel_stale_pending' => 'nullable|string',
+            'signal_close_opposite_positions' => 'nullable|string',
         ]);
 
-        // Log validated data
-        Log::info('Signal Generator Update - Validated Data', $validated);
-
-        // Store all settings
-        Setting::set('signal_interval', $validated['interval'], 'signal_generator', 'integer');
-        Setting::set('signal_top_count', $validated['top_signals'], 'signal_generator', 'integer');
-        Setting::set('signal_min_confidence', $validated['min_confidence'], 'signal_generator', 'integer');
+        // Schedule Configuration
+        Setting::set('signal_interval', $validated['signal_interval'], 'signal_generator', 'integer');
+        Setting::set('signal_top_count', $validated['signal_top_count'], 'signal_generator', 'integer');
+        Setting::set('signal_min_confidence', $validated['signal_min_confidence'], 'signal_generator', 'integer');
         Setting::set('signal_expiry', $validated['signal_expiry'], 'signal_generator', 'integer');
+        Setting::set('signal_auto_execute', $request->has('signal_auto_execute'), 'signal_generator', 'boolean');
+        Setting::set('signal_auto_execute_count', $validated['signal_auto_execute_count'], 'signal_generator', 'integer');
         
-        // Trading Pairs
-        Setting::set('signal_pairs', $validated['pairs'] ?? [], 'signal_generator', 'array');
+        // Trading Pairs Configuration
+        Setting::set('signal_use_dynamic_pairs', $request->has('signal_use_dynamic_pairs'), 'signal_generator', 'boolean');
+        Setting::set('signal_min_volume', $validated['signal_min_volume'], 'signal_generator', 'integer');
+        Setting::set('signal_max_pairs', $validated['signal_max_pairs'], 'signal_generator', 'integer');
+        Setting::set('signal_pairs', $validated['signal_pairs'] ?? [], 'signal_generator', 'array');
         
         // Timeframes
-        Setting::set('signal_primary_timeframe', $validated['primary_timeframe'], 'signal_generator', 'string');
-        Setting::set('signal_higher_timeframe', $validated['higher_timeframe'], 'signal_generator', 'string');
-        // Also save as secondary_timeframe for backward compatibility
-        Setting::set('signal_secondary_timeframe', $validated['higher_timeframe'], 'signal_generator', 'string');
+        Setting::set('signal_primary_timeframe', $validated['signal_primary_timeframe'], 'signal_generator', 'string');
+        Setting::set('signal_higher_timeframe', $validated['signal_higher_timeframe'], 'signal_generator', 'string');
         
-        // SMC Patterns
-        Setting::set('signal_patterns', $validated['patterns'] ?? [], 'signal_generator', 'array');
+        // SMC Pattern Detection
+        Setting::set('signal_patterns', $validated['signal_patterns'] ?? [], 'signal_generator', 'array');
         
         // Analysis Parameters
-        Setting::set('signal_lookback_periods', $validated['lookback_periods'], 'signal_generator', 'integer');
-        Setting::set('signal_pattern_strength', $validated['pattern_strength'], 'signal_generator', 'integer');
+        Setting::set('signal_lookback_periods', $validated['signal_lookback_periods'], 'signal_generator', 'integer');
+        Setting::set('signal_pattern_strength', $validated['signal_pattern_strength'], 'signal_generator', 'integer');
         
         // Risk Management
-        Setting::set('signal_risk_reward', $validated['risk_reward'], 'signal_generator', 'string');
-        Setting::set('signal_max_sl', $validated['max_sl'], 'signal_generator', 'float');
-        Setting::set('signal_position_size', $validated['position_size'], 'signal_generator', 'integer');
-        Setting::set('signal_leverage', $validated['leverage'], 'signal_generator', 'string');
+        Setting::set('signal_risk_reward', $validated['signal_risk_reward'], 'signal_generator', 'string');
+        Setting::set('signal_max_sl', $validated['signal_max_sl'], 'signal_generator', 'float');
+        Setting::set('signal_position_size', $validated['signal_position_size'], 'signal_generator', 'float');
+        Setting::set('signal_leverage', $validated['signal_leverage'], 'signal_generator', 'string');
+        
+        // Order Type
+        Setting::set('signal_order_type', $validated['signal_order_type'], 'signal_generator', 'string');
         
         // Exchange Configuration
-        Setting::set('signal_exchanges', $validated['exchanges'] ?? [], 'signal_generator', 'array');
+        Setting::set('signal_exchanges', $validated['signal_exchanges'] ?? ['bybit'], 'signal_generator', 'array');
         
-        // Advanced Options (convert checkbox "on" to boolean true)
-        Setting::set('signal_auto_execute', $request->has('auto_execute'), 'signal_generator', 'boolean');
-        Setting::set('signal_notify_users', $request->has('notify_users'), 'signal_generator', 'boolean');
-        Setting::set('signal_log_analysis', $request->has('log_analysis'), 'signal_generator', 'boolean');
-        Setting::set('signal_test_mode', $request->has('test_mode'), 'signal_generator', 'boolean');
-
-        Log::info('Signal Generator Settings Updated Successfully');
+        // Advanced Options
+        Setting::set('signal_notify_users', $request->has('signal_notify_users'), 'signal_generator', 'boolean');
+        Setting::set('signal_log_analysis', $request->has('signal_log_analysis'), 'signal_generator', 'boolean');
+        Setting::set('signal_test_mode', $request->has('signal_test_mode'), 'signal_generator', 'boolean');
+        
+        // Conflict Management
+        Setting::set('signal_stale_order_hours', $validated['signal_stale_order_hours'], 'signal_generator', 'integer');
+        Setting::set('signal_skip_duplicate_positions', $request->has('signal_skip_duplicate_positions'), 'signal_generator', 'boolean');
+        Setting::set('signal_cancel_opposite_pending', $request->has('signal_cancel_opposite_pending'), 'signal_generator', 'boolean');
+        Setting::set('signal_cancel_stale_pending', $request->has('signal_cancel_stale_pending'), 'signal_generator', 'boolean');
+        Setting::set('signal_close_opposite_positions', $request->has('signal_close_opposite_positions'), 'signal_generator', 'boolean');
 
         return redirect()->route('admin.settings.signal-generator')
             ->with('success', 'Signal generator settings updated successfully!');
@@ -296,26 +340,16 @@ class SettingsController extends Controller
 
     public function system()
     {
-        $systemSettings = Setting::getGroup('system');
-        $tradingSettings = Setting::getGroup('trading');
-        $monitoringSettings = Setting::getGroup('monitoring');
-        $notificationSettings = Setting::getGroup('notifications');
-        $backupSettings = Setting::getGroup('backup');
-        $performanceSettings = Setting::getGroup('performance');
-        $apiSettings = Setting::getGroup('api');
+        // Load all system settings and convert to key-value array
+        $settingsCollection = Setting::all()->keyBy('key');
         
-        // Merge all settings
-        $settings = array_merge(
-            $systemSettings ?: [],
-            $tradingSettings ?: [],
-            $monitoringSettings ?: [],
-            $notificationSettings ?: [],
-            $backupSettings ?: [],
-            $performanceSettings ?: [],
-            $apiSettings ?: []
-        );
+        // Convert collection of Setting models to simple key-value array
+        $settings = [];
+        foreach ($settingsCollection as $key => $setting) {
+            $settings[$key] = $setting->value;
+        }
         
-        // Set defaults if empty
+        // If no settings exist, provide comprehensive defaults
         if (empty($settings)) {
             $settings = [
                 'system_name' => 'CryptoBot Pro',
@@ -327,14 +361,14 @@ class SettingsController extends Controller
                 'system_session_timeout' => 120,
                 
                 'trading_enabled' => true,
-                'trading_max_trades_per_user' => 20,
-                'trading_default_leverage' => 3,
-                'trading_max_leverage' => 10,
+                'trading_max_trades_per_user' => 10,
+                'trading_default_leverage' => 10,
+                'trading_max_leverage' => 100,
                 'trading_min_position_size' => 10,
-                'trading_max_position_size' => 50000,
+                'trading_max_position_size' => 10000,
                 'trading_execution_timeout' => 30,
                 
-                'monitor_interval' => 10,
+                'monitor_interval' => 5,
                 'monitor_emergency_sl' => 10,
                 'monitor_daily_loss_limit' => 15,
                 'monitor_max_drawdown' => 25,
@@ -342,6 +376,7 @@ class SettingsController extends Controller
                 'monitor_auto_take_profit' => true,
                 'monitor_trailing_stop' => false,
                 'monitor_circuit_breaker' => true,
+                'enable_profit_milestones' => true,
                 
                 'api_timeout' => 15,
                 'api_max_retries' => 3,
@@ -386,64 +421,69 @@ class SettingsController extends Controller
         $validated = $request->validate([
             // System Settings
             'system_name' => 'required|string|max:255',
-            'timezone' => 'required|string',
-            'maintenance_mode' => 'required|in:0,1',
-            'debug_mode' => 'required|in:0,1',
-            'allow_registration' => 'nullable|in:0,1',
-            'email_verification' => 'nullable|in:0,1',
-            'session_timeout' => 'nullable|integer|min:30|max:1440',
+            'system_timezone' => 'required|string',
+            'system_maintenance_mode' => 'required|in:0,1',
+            'system_debug_mode' => 'required|in:0,1',
+            'system_allow_registration' => 'nullable|in:0,1',
+            'system_email_verification' => 'nullable|in:0,1',
+            'system_session_timeout' => 'nullable|integer|min:30|max:1440',
             
             // Trading Settings
             'trading_enabled' => 'required|in:0,1',
-            'max_trades_per_user' => 'required|integer|min:1|max:100',
-            'default_leverage' => 'required|integer|min:1|max:100',
-            'max_leverage' => 'required|integer|min:1|max:100',
-            'min_position_size' => 'required|numeric|min:1',
-            'max_position_size' => 'required|numeric|min:100',
-            'trade_timeout' => 'required|integer|min:5|max:120',
+            'trading_max_trades_per_user' => 'required|integer|min:1|max:100',
+            'trading_default_leverage' => 'required|integer|min:1|max:100',
+            'trading_max_leverage' => 'required|integer|min:1|max:100',
+            'trading_min_position_size' => 'required|numeric|min:1',
+            'trading_max_position_size' => 'required|numeric|min:100',
+            'trading_execution_timeout' => 'required|integer|min:5|max:120',
             
             // Monitoring Settings
             'monitor_interval' => 'required|integer|min:5|max:60',
-            'emergency_sl' => 'required|numeric|min:5|max:50',
-            'daily_loss_limit' => 'required|numeric|min:5|max:50',
-            'max_drawdown' => 'nullable|numeric|min:10|max:50',
-            'max_drawdown_alert' => 'nullable|numeric|min:10|max:50',
+            'monitor_emergency_sl' => 'required|numeric|min:5|max:50',
+            'monitor_daily_loss_limit' => 'required|numeric|min:5|max:50',
+            'monitor_max_drawdown' => 'nullable|numeric|min:10|max:50',
             
             // Risk Management Features (checkboxes)
-            'auto_stop_loss' => 'nullable|string',
-            'auto_take_profit' => 'nullable|string',
-            'trailing_stop' => 'nullable|string',
-            'circuit_breaker' => 'nullable|string',
+            'monitor_auto_stop_loss' => 'nullable|string',
+            'monitor_auto_take_profit' => 'nullable|string',
+            'monitor_trailing_stop' => 'nullable|string',
+            'monitor_circuit_breaker' => 'nullable|string',
+            'enable_profit_milestones' => 'nullable|string',
             
             // API Settings
             'api_timeout' => 'nullable|integer|min:5|max:60',
-            'max_retries' => 'nullable|integer|min:1|max:10',
-            'bybit_rate_limit' => 'nullable|integer|min:10|max:200',
+            'api_max_retries' => 'nullable|integer|min:1|max:10',
+            'api_bybit_rate_limit' => 'nullable|integer|min:10|max:200',
             
             // Notification Settings (checkboxes)
-            'notify_trade_execution' => 'nullable|string',
-            'notify_tp_sl' => 'nullable|string',
-            'notify_signals' => 'nullable|string',
-            'notify_errors' => 'nullable|string',
-            'notify_high_risk' => 'nullable|string',
-            'daily_summary' => 'nullable|string',
+            'notifications_enabled' => 'nullable|string',
+            'notifications_email' => 'nullable|string',
+            'notifications_telegram' => 'nullable|string',
+            'notifications_sms' => 'nullable|string',
+            'notifications_trade_execution' => 'nullable|string',
+            'notifications_tp_sl' => 'nullable|string',
+            'notifications_signals' => 'nullable|string',
+            'notifications_errors' => 'nullable|string',
+            'notifications_high_risk' => 'nullable|string',
+            'notifications_daily_summary' => 'nullable|string',
             
             // Email Settings
-            'admin_email' => 'nullable|email',
-            'smtp_server' => 'nullable|string',
+            'notifications_admin_email' => 'nullable|email',
+            'notifications_smtp_server' => 'nullable|string',
             
             // Backup Settings
-            'auto_backup' => 'nullable|in:0,1',
+            'backup_auto_backup' => 'nullable|in:0,1',
             'backup_frequency' => 'required|string',
-            'backup_retention' => 'required|integer|min:7|max:90',
-            'data_retention' => 'nullable|integer|min:30|max:3650',
-            'log_retention' => 'nullable|integer|min:7|max:365',
+            'backup_retention_days' => 'required|integer|min:7|max:90',
+            'backup_data_retention' => 'nullable|integer|min:30|max:3650',
+            'backup_log_retention' => 'nullable|integer|min:7|max:365',
+            'backup_include_logs' => 'nullable|string',
             
             // Performance Settings
             'cache_driver' => 'required|string',
             'cache_ttl' => 'required|integer|min:60|max:86400',
             'queue_driver' => 'required|string',
-            'max_workers' => 'required|integer|min:1|max:50',
+            'queue_max_workers' => 'required|integer|min:1|max:50',
         ]);
 
         // Log validated data
@@ -451,63 +491,69 @@ class SettingsController extends Controller
 
         // System settings
         Setting::set('system_name', $validated['system_name'], 'system', 'string');
-        Setting::set('system_timezone', $validated['timezone'], 'system', 'string');
-        Setting::set('system_maintenance_mode', (bool)$validated['maintenance_mode'], 'system', 'boolean');
-        Setting::set('system_debug_mode', (bool)$validated['debug_mode'], 'system', 'boolean');
-        Setting::set('system_allow_registration', (bool)($validated['allow_registration'] ?? 1), 'system', 'boolean');
-        Setting::set('system_email_verification', (bool)($validated['email_verification'] ?? 1), 'system', 'boolean');
-        Setting::set('system_session_timeout', $validated['session_timeout'] ?? 120, 'system', 'integer');
+        Setting::set('system_timezone', $validated['system_timezone'], 'system', 'string');
+        Setting::set('system_maintenance_mode', (bool)$validated['system_maintenance_mode'], 'system', 'boolean');
+        Setting::set('system_debug_mode', (bool)$validated['system_debug_mode'], 'system', 'boolean');
+        Setting::set('system_allow_registration', (bool)($validated['system_allow_registration'] ?? 1), 'system', 'boolean');
+        Setting::set('system_email_verification', (bool)($validated['system_email_verification'] ?? 1), 'system', 'boolean');
+        Setting::set('system_session_timeout', $validated['system_session_timeout'] ?? 120, 'system', 'integer');
         
         // Trading settings
         Setting::set('trading_enabled', (bool)$validated['trading_enabled'], 'trading', 'boolean');
-        Setting::set('trading_max_trades_per_user', $validated['max_trades_per_user'], 'trading', 'integer');
-        Setting::set('trading_default_leverage', $validated['default_leverage'], 'trading', 'integer');
-        Setting::set('trading_max_leverage', $validated['max_leverage'], 'trading', 'integer');
-        Setting::set('trading_min_position_size', $validated['min_position_size'], 'trading', 'integer');
-        Setting::set('trading_max_position_size', $validated['max_position_size'], 'trading', 'integer');
-        Setting::set('trading_execution_timeout', $validated['trade_timeout'], 'trading', 'integer');
+        Setting::set('trading_max_trades_per_user', $validated['trading_max_trades_per_user'], 'trading', 'integer');
+        Setting::set('trading_default_leverage', $validated['trading_default_leverage'], 'trading', 'integer');
+        Setting::set('trading_max_leverage', $validated['trading_max_leverage'], 'trading', 'integer');
+        Setting::set('trading_min_position_size', $validated['trading_min_position_size'], 'trading', 'integer');
+        Setting::set('trading_max_position_size', $validated['trading_max_position_size'], 'trading', 'integer');
+        Setting::set('trading_execution_timeout', $validated['trading_execution_timeout'], 'trading', 'integer');
         
         // Monitoring settings
         Setting::set('monitor_interval', $validated['monitor_interval'], 'monitoring', 'integer');
-        Setting::set('monitor_emergency_sl', $validated['emergency_sl'], 'monitoring', 'float');
-        Setting::set('monitor_daily_loss_limit', $validated['daily_loss_limit'], 'monitoring', 'float');
-        Setting::set('monitor_max_drawdown', $validated['max_drawdown'] ?? $validated['max_drawdown_alert'] ?? 25, 'monitoring', 'float');
+        Setting::set('monitor_emergency_sl', $validated['monitor_emergency_sl'], 'monitoring', 'float');
+        Setting::set('monitor_daily_loss_limit', $validated['monitor_daily_loss_limit'], 'monitoring', 'float');
+        Setting::set('monitor_max_drawdown', $validated['monitor_max_drawdown'] ?? 25, 'monitoring', 'float');
         
         // Risk Management Features
-        Setting::set('monitor_auto_stop_loss', $request->has('auto_stop_loss'), 'monitoring', 'boolean');
-        Setting::set('monitor_auto_take_profit', $request->has('auto_take_profit'), 'monitoring', 'boolean');
-        Setting::set('monitor_trailing_stop', $request->has('trailing_stop'), 'monitoring', 'boolean');
-        Setting::set('monitor_circuit_breaker', $request->has('circuit_breaker'), 'monitoring', 'boolean');
+        Setting::set('monitor_auto_stop_loss', $request->has('monitor_auto_stop_loss'), 'monitoring', 'boolean');
+        Setting::set('monitor_auto_take_profit', $request->has('monitor_auto_take_profit'), 'monitoring', 'boolean');
+        Setting::set('monitor_trailing_stop', $request->has('monitor_trailing_stop'), 'monitoring', 'boolean');
+        Setting::set('monitor_circuit_breaker', $request->has('monitor_circuit_breaker'), 'monitoring', 'boolean');
+        Setting::set('enable_profit_milestones', $request->has('enable_profit_milestones'), 'monitoring', 'boolean');
         
         // API Settings
         Setting::set('api_timeout', $validated['api_timeout'] ?? 15, 'api', 'integer');
-        Setting::set('api_max_retries', $validated['max_retries'] ?? 3, 'api', 'integer');
-        Setting::set('api_bybit_rate_limit', $validated['bybit_rate_limit'] ?? 100, 'api', 'integer');
+        Setting::set('api_max_retries', $validated['api_max_retries'] ?? 3, 'api', 'integer');
+        Setting::set('api_bybit_rate_limit', $validated['api_bybit_rate_limit'] ?? 100, 'api', 'integer');
         
-        // Notification Preferences
-        Setting::set('notifications_trade_execution', $request->has('notify_trade_execution'), 'notifications', 'boolean');
-        Setting::set('notifications_tp_sl', $request->has('notify_tp_sl'), 'notifications', 'boolean');
-        Setting::set('notifications_signals', $request->has('notify_signals'), 'notifications', 'boolean');
-        Setting::set('notifications_errors', $request->has('notify_errors'), 'notifications', 'boolean');
-        Setting::set('notifications_high_risk', $request->has('notify_high_risk'), 'notifications', 'boolean');
-        Setting::set('notifications_daily_summary', $request->has('daily_summary'), 'notifications', 'boolean');
+        // Notification Settings
+        Setting::set('notifications_enabled', $request->has('notifications_enabled'), 'notifications', 'boolean');
+        Setting::set('notifications_email', $request->has('notifications_email'), 'notifications', 'boolean');
+        Setting::set('notifications_telegram', $request->has('notifications_telegram'), 'notifications', 'boolean');
+        Setting::set('notifications_sms', $request->has('notifications_sms'), 'notifications', 'boolean');
+        Setting::set('notifications_trade_execution', $request->has('notifications_trade_execution'), 'notifications', 'boolean');
+        Setting::set('notifications_tp_sl', $request->has('notifications_tp_sl'), 'notifications', 'boolean');
+        Setting::set('notifications_signals', $request->has('notifications_signals'), 'notifications', 'boolean');
+        Setting::set('notifications_errors', $request->has('notifications_errors'), 'notifications', 'boolean');
+        Setting::set('notifications_high_risk', $request->has('notifications_high_risk'), 'notifications', 'boolean');
+        Setting::set('notifications_daily_summary', $request->has('notifications_daily_summary'), 'notifications', 'boolean');
         
         // Email Settings
-        Setting::set('notifications_admin_email', $validated['admin_email'] ?? 'admin@cryptobot.com', 'notifications', 'string');
-        Setting::set('notifications_smtp_server', $validated['smtp_server'] ?? 'smtp.gmail.com', 'notifications', 'string');
+        Setting::set('notifications_admin_email', $validated['notifications_admin_email'] ?? 'admin@cryptobot.com', 'notifications', 'string');
+        Setting::set('notifications_smtp_server', $validated['notifications_smtp_server'] ?? 'smtp.gmail.com', 'notifications', 'string');
         
         // Backup settings
-        Setting::set('backup_auto_backup', (bool)($validated['auto_backup'] ?? 1), 'backup', 'boolean');
+        Setting::set('backup_auto_backup', (bool)($validated['backup_auto_backup'] ?? 1), 'backup', 'boolean');
         Setting::set('backup_frequency', $validated['backup_frequency'], 'backup', 'string');
-        Setting::set('backup_retention_days', $validated['backup_retention'], 'backup', 'integer');
-        Setting::set('backup_data_retention', $validated['data_retention'] ?? 365, 'backup', 'integer');
-        Setting::set('backup_log_retention', $validated['log_retention'] ?? 90, 'backup', 'integer');
+        Setting::set('backup_retention_days', $validated['backup_retention_days'], 'backup', 'integer');
+        Setting::set('backup_data_retention', $validated['backup_data_retention'] ?? 365, 'backup', 'integer');
+        Setting::set('backup_log_retention', $validated['backup_log_retention'] ?? 90, 'backup', 'integer');
+        Setting::set('backup_include_logs', $request->has('backup_include_logs'), 'backup', 'boolean');
         
         // Performance settings
         Setting::set('cache_driver', $validated['cache_driver'], 'performance', 'string');
         Setting::set('cache_ttl', $validated['cache_ttl'], 'performance', 'integer');
         Setting::set('queue_driver', $validated['queue_driver'], 'performance', 'string');
-        Setting::set('queue_max_workers', $validated['max_workers'], 'performance', 'integer');
+        Setting::set('queue_max_workers', $validated['queue_max_workers'], 'performance', 'integer');
 
         Log::info('System Settings Updated Successfully');
 

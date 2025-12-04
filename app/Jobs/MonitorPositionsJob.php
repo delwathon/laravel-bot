@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Services\PositionMonitorService;
 use Illuminate\Bus\Queueable;
+use App\Models\Setting;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -25,6 +26,12 @@ class MonitorPositionsJob implements ShouldQueue
         
         try {
             Log::info('[MonitorPositionsJob] Calling PositionMonitorService->monitorAllPositions()');
+
+            // Check if feature is enabled
+            if (!Setting::get('enable_profit_milestones', true)) {
+                Log::info('[MonitorPositionsJob] Profit milestones disabled, skipping');
+                return;
+            }
             
             $results = $monitorService->monitorAllPositions();
             

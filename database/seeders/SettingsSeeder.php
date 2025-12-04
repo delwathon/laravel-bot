@@ -19,13 +19,17 @@ class SettingsSeeder extends Seeder
             // ============================================
             
             // Schedule Configuration
-            ['key' => 'signal_interval', 'value' => '240', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Signal generation interval in minutes'],
+            ['key' => 'signal_interval', 'value' => '30', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Signal generation interval in minutes'],
             ['key' => 'signal_top_count', 'value' => '10', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Number of top signals to generate'],
             ['key' => 'signal_min_confidence', 'value' => '70', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Minimum confidence threshold'],
             ['key' => 'signal_expiry', 'value' => '30', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Signal expiry time in minutes'],
+            ['key' => 'signal_use_dynamic_pairs', 'value' => '1', 'group' => 'signal_generator', 'type' => 'boolean', 'description' => 'Use dynamic pair selection based on volume instead of fixed pairs'],
+            ['key' => 'signal_min_volume', 'value' => '5000000', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Minimum 24h trading volume in USDT for pair selection'],
+            ['key' => 'signal_auto_execute_count', 'value' => '3', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Number of signals to auto-execute'],
+            ['key' => 'signal_max_pairs', 'value' => '50', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Number of signals to analyze for dynamic pair selection'],
             
             // Trading Pairs
-            ['key' => 'signal_pairs', 'value' => json_encode(['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT']), 'group' => 'signal_generator', 'type' => 'array', 'description' => 'Trading pairs to monitor'],
+            ['key' => 'signal_pairs', 'value' => json_encode(['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT', 'ADAUSDT', 'DOGEUSDT', 'TRXUSDT', 'MATICUSDT', 'DOTUSDT', 'LTCUSDT', 'LINKUSDT', 'AVAXUSDT', 'UNIUSDT', 'ATOMUSDT', 'XLMUSDT', 'FILUSDT', 'ETCUSDT', 'NEARUSDT', 'APTUSDT', 'ICPUSDT', 'ARBUSDT', 'OPUSDT', 'LDOUSDT', 'INJUSDT', 'STXUSDT', 'TIAUSDT', 'SUIUSDT', 'SEIUSDT', 'RENDERUSDT', 'RNDRUSDT', 'ALGOUSDT', 'VETUSDT', 'AAVEUSDT', 'SUSHIUSDT', 'PEPEUSDT', 'WIFUSDT', 'BONKUSDT', 'FLOKIUSDT', 'SHIBUSDT', 'FTMUSDT', 'SANDUSDT', 'MANAUSDT', 'AXSUSDT', 'GALAUSDT', 'ENJUSDT', 'CHZUSDT', 'GMTUSDT', 'APEUSDT', 'BLURUSDT']), 'group' => 'signal_generator', 'type' => 'array', 'description' => 'Trading pairs to monitor'],
             
             // Timeframes
             ['key' => 'signal_primary_timeframe', 'value' => '240', 'group' => 'signal_generator', 'type' => 'string', 'description' => 'Primary analysis timeframe'],
@@ -41,7 +45,7 @@ class SettingsSeeder extends Seeder
             
             // Risk Management
             ['key' => 'signal_risk_reward', 'value' => '1:2', 'group' => 'signal_generator', 'type' => 'string', 'description' => 'Default risk/reward ratio'],
-            ['key' => 'signal_max_sl', 'value' => '2', 'group' => 'signal_generator', 'type' => 'float', 'description' => 'Maximum stop loss percentage'],
+            ['key' => 'signal_max_sl', 'value' => '5', 'group' => 'signal_generator', 'type' => 'float', 'description' => 'Maximum stop loss percentage'],
             ['key' => 'signal_position_size', 'value' => '5', 'group' => 'signal_generator', 'type' => 'integer', 'description' => 'Default position size percentage'],
             ['key' => 'signal_leverage', 'value' => 'Max', 'group' => 'signal_generator', 'type' => 'string', 'description' => 'Default leverage'],
             

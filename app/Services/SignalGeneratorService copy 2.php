@@ -16,61 +16,13 @@ class SignalGeneratorService
     protected $higherTimeframe;  // e.g., '240' for 4 hours
     protected $minConfidence = 70;
     protected $maxStopLossPercent = 2.0; // Max SL as percentage
-    protected $riskRewardMultiplier = 2.5; // Risk:Reward ratio multiplier
-    protected $lookbackPeriods = 50; // Lookback periods for analysis
-    protected $atrMultiplier = 1.5; // ATR multiplier for pattern strength
-    protected $enabledPatterns = []; // Enabled SMC patterns
 
     public function __construct()
     {
         // Get Timeframes from Database, defaulting to common SMC settings
         $this->primaryTimeframe = Setting::get('signal_primary_timeframe', '15');
         $this->higherTimeframe = Setting::get('signal_higher_timeframe', '240');
-        
-        // Risk Management
         $this->maxStopLossPercent = (float) Setting::get('signal_max_sl', 2.0);
-        $this->minConfidence = (int) Setting::get('signal_min_confidence', 70);
-        
-        // Risk:Reward Ratio
-        $rrString = Setting::get('signal_risk_reward', '1:2.5');
-        if (strpos($rrString, ':') !== false) {
-            list($risk, $reward) = array_map('floatval', explode(':', $rrString));
-            $this->riskRewardMultiplier = ($risk > 0) ? ($reward / $risk) : 2.5;
-        } else {
-            $this->riskRewardMultiplier = 2.5; // Default fallback
-        }
-        
-        // Trading Pairs
-        $pairsJson = Setting::get('signal_pairs', null);
-        if ($pairsJson) {
-            // Check if it's already an array or needs decoding
-            $decoded = is_array($pairsJson) ? $pairsJson : json_decode($pairsJson, true);
-            if (is_array($decoded) && !empty($decoded)) {
-                $this->symbols = $decoded;
-            }
-        }
-        
-        // Analysis Parameters
-        $this->lookbackPeriods = (int) Setting::get('signal_lookback_periods', 50);
-        
-        // Pattern Strength (affects ATR multipliers)
-        $strength = (int) Setting::get('signal_pattern_strength', 3);
-        $this->atrMultiplier = 0.5 + ($strength * 0.25); // 1=1.0x, 3=1.5x, 5=2.0x
-        
-        // Enabled Patterns
-        $patternsJson = Setting::get('signal_patterns', null);
-        if ($patternsJson) {
-            // Check if it's already an array or needs decoding
-            $decoded = is_array($patternsJson) ? $patternsJson : json_decode($patternsJson, true);
-            if (is_array($decoded) && !empty($decoded)) {
-                $this->enabledPatterns = $decoded;
-            }
-        }
-        
-        // Default to all patterns if none configured
-        if (empty($this->enabledPatterns)) {
-            $this->enabledPatterns = ['order_block', 'fvg', 'liquidity_sweep', 'bos', 'choch'];
-        }
     }
 
     protected function getAdminBybitService()
@@ -133,7 +85,7 @@ class SignalGeneratorService
         
         if ($useDynamicPairs && $symbols === null) {
             $minVolume = (float) Setting::get('signal_min_volume', 5000000);
-            $maxPairs = (int) Setting::get('signal_max_pairs', 50);
+            $maxPairs = (int) Setting::get('signal_max_pairs', 50); // NEW: Maximum pairs to analyze
             
             Log::info('[SignalGenerator] Using dynamic pair selection', [
                 'min_volume' => $minVolume,
@@ -144,7 +96,7 @@ class SignalGeneratorService
                 $bybit = $this->getAdminBybitService();
                 $symbols = $bybit->getHighVolumeTradingPairs($minVolume);
                 
-                // Limit to max pairs
+                // NEW: Limit to max pairs
                 if (count($symbols) > $maxPairs) {
                     Log::info('[SignalGenerator] Limiting pairs from ' . count($symbols) . ' to ' . $maxPairs);
                     $symbols = array_slice($symbols, 0, $maxPairs);
@@ -163,7 +115,7 @@ class SignalGeneratorService
         } else {
             $symbols = $symbols ?? $this->symbols;
             
-            // Also apply limit to fixed pairs if specified
+            // NEW: Also apply limit to fixed pairs if specified
             $maxPairs = (int) Setting::get('signal_max_pairs', 999999);
             if (count($symbols) > $maxPairs) {
                 Log::info('[SignalGenerator] Limiting fixed pairs from ' . count($symbols) . ' to ' . $maxPairs);
@@ -338,31 +290,14 @@ class SignalGeneratorService
         }
 
         // --- STEP 1: CONTEXT ANALYSIS ---
-        $structureBias = $this->detectMarketStructure($primaryCandles, $this->lookbackPeriods);
+        $structureBias = $this->detectMarketStructure($primaryCandles, 100);
         $htfBias = $this->detectHTFTrend($htfCandles);
 
-        // --- STEP 2: PATTERN DETECTION (only enabled patterns) ---
+        // --- STEP 2: PATTERN DETECTION ---
         $signals = [];
-        
-        if (in_array('order_block', $this->enabledPatterns)) {
-            $signals[] = $this->detectOrderBlock($primaryCandles, $symbol, $currentPrice);
-        }
-        
-        if (in_array('fvg', $this->enabledPatterns)) {
-            $signals[] = $this->detectFairValueGap($primaryCandles, $symbol, $currentPrice);
-        }
-        
-        if (in_array('liquidity_sweep', $this->enabledPatterns)) {
-            $signals[] = $this->detectLiquiditySweep($primaryCandles, $symbol, $currentPrice);
-        }
-        
-        if (in_array('bos', $this->enabledPatterns)) {
-            $signals[] = $this->detectBreakOfStructure($primaryCandles, $symbol, $currentPrice);
-        }
-        
-        if (in_array('choch', $this->enabledPatterns)) {
-            $signals[] = $this->detectChangeOfCharacter($primaryCandles, $symbol, $currentPrice);
-        }
+        $signals[] = $this->detectOrderBlock($primaryCandles, $symbol, $currentPrice);
+        $signals[] = $this->detectFairValueGap($primaryCandles, $symbol, $currentPrice);
+        $signals[] = $this->detectLiquiditySweep($primaryCandles, $symbol, $currentPrice);
 
         // --- STEP 3: SIGNAL FILTERING & SCORING ---
         foreach ($signals as $signal) {
@@ -486,10 +421,8 @@ class SignalGeneratorService
      * Determines Market Structure (BOS/CHoCH) by looking for HH/HL or LH/LL.
      * Simplistic 3-point swing analysis.
      */
-    protected function detectMarketStructure($candles, $lookback = null)
+    protected function detectMarketStructure($candles, $lookback = 100)
     {
-        $lookback = $lookback ?? $this->lookbackPeriods;
-        
         if (count($candles) < $lookback) {
             return 'ranging';
         }
@@ -501,10 +434,9 @@ class SignalGeneratorService
         $currentHigh = $recentCandles[0]['high'];
         $currentLow = $recentCandles[0]['low'];
 
-        // Use half the lookback for swing detection (more robust than fixed 10)
-        $swingLookback = max(10, intval($lookback / 2));
-        $recentMax = max(array_slice($highs, 0, $swingLookback)); 
-        $recentMin = min(array_slice($lows, 0, $swingLookback));
+        // Get the last 3 major swings (can be improved with a proper swing detector)
+        $recentMax = max(array_slice($highs, 0, 10)); 
+        $recentMin = min(array_slice($lows, 0, 10));
 
         // Use a simple lookback window to find the highest high (HH) and lowest low (LL)
         $hhIndex = array_search(max($highs), $highs);
@@ -763,11 +695,11 @@ class SignalGeneratorService
         for ($i = 5; $i < count($recentCandles) - 5; $i++) {
             $current = $recentCandles[$i];
             
-            // Check for strong bullish candle (body > atrMultiplier * ATR)
+            // Check for strong bullish candle (body > 1.5 * ATR)
             $bodySize = abs($current['close'] - $current['open']);
             $isBullishCandle = $current['close'] > $current['open'];
             
-            if (!$isBullishCandle || $bodySize < ($atr * $this->atrMultiplier)) {
+            if (!$isBullishCandle || $bodySize < ($atr * 1.5)) {
                 continue;
             }
             
@@ -802,7 +734,7 @@ class SignalGeneratorService
                 $rawStopLoss = $obLow - ($atr * 1.5);
                 $stopLoss = $this->calculateStopLossWithCap($entryPrice, $rawStopLoss, 'long');
                 $riskDistance = $entryPrice - $stopLoss;
-                $takeProfit = $entryPrice + ($riskDistance * $this->riskRewardMultiplier);
+                $takeProfit = $entryPrice + ($riskDistance * 2.5);
                 
                 Log::info("[{$symbol}] Bullish Order Block detected", [
                     'entry' => $entryPrice,
@@ -834,7 +766,7 @@ class SignalGeneratorService
             $bodySize = abs($current['close'] - $current['open']);
             $isBearishCandle = $current['close'] < $current['open'];
             
-            if (!$isBearishCandle || $bodySize < ($atr * $this->atrMultiplier)) {
+            if (!$isBearishCandle || $bodySize < ($atr * 1.5)) {
                 continue;
             }
             
@@ -868,7 +800,7 @@ class SignalGeneratorService
                 $rawStopLoss = $obHigh + ($atr * 1.5);
                 $stopLoss = $this->calculateStopLossWithCap($entryPrice, $rawStopLoss, 'short');
                 $riskDistance = $stopLoss - $entryPrice;
-                $takeProfit = $entryPrice - ($riskDistance * $this->riskRewardMultiplier);
+                $takeProfit = $entryPrice - ($riskDistance * 2.5);
                 
                 Log::info("[{$symbol}] Bearish Order Block detected", [
                     'entry' => $entryPrice,
@@ -945,7 +877,7 @@ class SignalGeneratorService
                 $rawStopLoss = $gapLow - ($atr * 1.0);
                 $stopLoss = $this->calculateStopLossWithCap($entryPrice, $rawStopLoss, 'long');
                 $riskDistance = $entryPrice - $stopLoss;
-                $takeProfit = $entryPrice + ($riskDistance * $this->riskRewardMultiplier);
+                $takeProfit = $entryPrice + ($riskDistance * 2.5);
                 
                 Log::info("[{$symbol}] Bullish FVG detected", [
                     'entry' => $entryPrice,
@@ -1001,7 +933,7 @@ class SignalGeneratorService
                 $rawStopLoss = $gapHigh + ($atr * 1.0);
                 $stopLoss = $this->calculateStopLossWithCap($entryPrice, $rawStopLoss, 'short');
                 $riskDistance = $stopLoss - $entryPrice;
-                $takeProfit = $entryPrice - ($riskDistance * $this->riskRewardMultiplier);
+                $takeProfit = $entryPrice - ($riskDistance * 2.5);
                 
                 Log::info("[{$symbol}] Bearish FVG detected", [
                     'entry' => $entryPrice,
@@ -1079,7 +1011,7 @@ class SignalGeneratorService
                     $rawStopLoss = $recentLow - ($atr * 1.0);
                     $stopLoss = $this->calculateStopLossWithCap($entryPrice, $rawStopLoss, 'long');
                     $riskDistance = $entryPrice - $stopLoss;
-                    $takeProfit = $entryPrice + ($riskDistance * $this->riskRewardMultiplier);
+                    $takeProfit = $entryPrice + ($riskDistance * 2.5);
                     
                     Log::info("[{$symbol}] Bullish Liquidity Sweep detected", [
                         'entry' => $entryPrice,
@@ -1137,7 +1069,7 @@ class SignalGeneratorService
                     $rawStopLoss = $recentHigh + ($atr * 1.0);
                     $stopLoss = $this->calculateStopLossWithCap($entryPrice, $rawStopLoss, 'short');
                     $riskDistance = $stopLoss - $entryPrice;
-                    $takeProfit = $entryPrice - ($riskDistance * $this->riskRewardMultiplier);
+                    $takeProfit = $entryPrice - ($riskDistance * 2.5);
                     
                     Log::info("[{$symbol}] Bearish Liquidity Sweep detected", [
                         'entry' => $entryPrice,
@@ -1160,253 +1092,6 @@ class SignalGeneratorService
             }
         }
 
-        return null;
-    }
-
-    /**
-     * Detect Break of Structure (BOS) Pattern
-     * 
-     * BOS: Price breaks a previous swing high (bullish) or swing low (bearish), 
-     * confirming trend continuation. Entry on pullback after the break.
-     */
-    protected function detectBreakOfStructure($candles, $symbol, $currentPrice)
-    {
-        if (count($candles) < 50) {
-            return null;
-        }
-        
-        $atr = $this->calculateATR($candles, 14);
-        $lookback = min(50, count($candles));
-        $recentCandles = array_slice($candles, 0, $lookback);
-        
-        $highs = array_column($recentCandles, 'high');
-        $lows = array_column($recentCandles, 'low');
-        
-        // === BULLISH BOS ===
-        // Find the previous swing high (excluding last 5 candles)
-        $swingHighs = array_slice($highs, 5);
-        if (empty($swingHighs)) {
-            return null;
-        }
-        
-        $previousSwingHigh = max($swingHighs);
-        $currentHigh = $recentCandles[0]['high'];
-        
-        // Check if we broke above the previous swing high
-        $bullishBOS = $currentHigh > $previousSwingHigh * 1.001; // 0.1% buffer
-        
-        if ($bullishBOS) {
-            // Look for a pullback to enter
-            // Entry should be near the broken swing high (now support)
-            $entryPrice = $previousSwingHigh * 1.002; // Slightly above the broken level
-            
-            // Only signal if current price is pulling back to this level
-            $distancePercent = abs(($currentPrice - $entryPrice) / $entryPrice) * 100;
-            
-            if ($distancePercent <= 5) {
-                $rawStopLoss = $previousSwingHigh - ($atr * 2.0);
-                $stopLoss = $this->calculateStopLossWithCap($entryPrice, $rawStopLoss, 'long');
-                $riskDistance = $entryPrice - $stopLoss;
-                $takeProfit = $entryPrice + ($riskDistance * $this->riskRewardMultiplier);
-                
-                Log::info("[{$symbol}] Bullish BOS detected", [
-                    'entry' => $entryPrice,
-                    'broken_swing_high' => $previousSwingHigh,
-                    'current_price' => $currentPrice,
-                    'sl' => $stopLoss,
-                    'sl_percent' => round(abs(($entryPrice - $stopLoss) / $entryPrice) * 100, 2)
-                ]);
-                
-                return [
-                    'symbol' => $symbol,
-                    'type' => 'long',
-                    'pattern' => 'Break of Structure (Bullish)',
-                    'confidence' => 80,
-                    'entry_price' => $entryPrice,
-                    'stop_loss' => $stopLoss,
-                    'take_profit' => $takeProfit,
-                ];
-            }
-        }
-        
-        // === BEARISH BOS ===
-        // Find the previous swing low (excluding last 5 candles)
-        $swingLows = array_slice($lows, 5);
-        if (empty($swingLows)) {
-            return null;
-        }
-        
-        $previousSwingLow = min($swingLows);
-        $currentLow = $recentCandles[0]['low'];
-        
-        // Check if we broke below the previous swing low
-        $bearishBOS = $currentLow < $previousSwingLow * 0.999; // 0.1% buffer
-        
-        if ($bearishBOS) {
-            // Look for a pullback to enter
-            $entryPrice = $previousSwingLow * 0.998; // Slightly below the broken level
-            
-            // Only signal if current price is pulling back to this level
-            $distancePercent = abs(($currentPrice - $entryPrice) / $entryPrice) * 100;
-            
-            if ($distancePercent <= 5) {
-                $rawStopLoss = $previousSwingLow + ($atr * 2.0);
-                $stopLoss = $this->calculateStopLossWithCap($entryPrice, $rawStopLoss, 'short');
-                $riskDistance = $stopLoss - $entryPrice;
-                $takeProfit = $entryPrice - ($riskDistance * $this->riskRewardMultiplier);
-                
-                Log::info("[{$symbol}] Bearish BOS detected", [
-                    'entry' => $entryPrice,
-                    'broken_swing_low' => $previousSwingLow,
-                    'current_price' => $currentPrice,
-                    'sl' => $stopLoss,
-                    'sl_percent' => round(abs(($entryPrice - $stopLoss) / $entryPrice) * 100, 2)
-                ]);
-                
-                return [
-                    'symbol' => $symbol,
-                    'type' => 'short',
-                    'pattern' => 'Break of Structure (Bearish)',
-                    'confidence' => 80,
-                    'entry_price' => $entryPrice,
-                    'stop_loss' => $stopLoss,
-                    'take_profit' => $takeProfit,
-                ];
-            }
-        }
-        
-        return null;
-    }
-
-    /**
-     * Detect Change of Character (CHoCH) Pattern
-     * 
-     * CHoCH: Price breaks structure in the OPPOSITE direction of the current trend,
-     * signaling a potential trend reversal. This is the first sign that the trend might be changing.
-     */
-    protected function detectChangeOfCharacter($candles, $symbol, $currentPrice)
-    {
-        if (count($candles) < 50) {
-            return null;
-        }
-        
-        $atr = $this->calculateATR($candles, 14);
-        $lookback = min(50, count($candles));
-        $recentCandles = array_slice($candles, 0, $lookback);
-        
-        $highs = array_column($recentCandles, 'high');
-        $lows = array_column($recentCandles, 'low');
-        
-        // Determine the recent trend (last 20 candles)
-        $trendLookback = 20;
-        $trendHighs = array_slice($highs, 0, $trendLookback);
-        $trendLows = array_slice($lows, 0, $trendLookback);
-        
-        $recentHighest = max($trendHighs);
-        $recentLowest = min($trendLows);
-        
-        // Check if we were in an uptrend (making higher highs)
-        $wasUptrend = false;
-        for ($i = 0; $i < min(10, count($trendHighs) - 5); $i++) {
-            $olderHigh = max(array_slice($trendHighs, $i + 5, 5));
-            $newerHigh = max(array_slice($trendHighs, $i, 5));
-            if ($newerHigh > $olderHigh * 1.002) {
-                $wasUptrend = true;
-                break;
-            }
-        }
-        
-        // Check if we were in a downtrend (making lower lows)
-        $wasDowntrend = false;
-        for ($i = 0; $i < min(10, count($trendLows) - 5); $i++) {
-            $olderLow = min(array_slice($trendLows, $i + 5, 5));
-            $newerLow = min(array_slice($trendLows, $i, 5));
-            if ($newerLow < $olderLow * 0.998) {
-                $wasDowntrend = true;
-                break;
-            }
-        }
-        
-        // === BEARISH CHoCH (Uptrend Breaking Down) ===
-        if ($wasUptrend) {
-            // Find recent swing low in the uptrend
-            $swingLow = min(array_slice($lows, 2, 15));
-            $currentLow = $recentCandles[0]['low'];
-            
-            // CHoCH occurs when price breaks below a swing low in an uptrend
-            if ($currentLow < $swingLow * 0.998) {
-                // Entry on retest of the broken low (now resistance)
-                $entryPrice = $swingLow * 0.998;
-                
-                $distancePercent = abs(($currentPrice - $entryPrice) / $entryPrice) * 100;
-                
-                if ($distancePercent <= 5) {
-                    $rawStopLoss = $swingLow + ($atr * 1.5);
-                    $stopLoss = $this->calculateStopLossWithCap($entryPrice, $rawStopLoss, 'short');
-                    $riskDistance = $stopLoss - $entryPrice;
-                    $takeProfit = $entryPrice - ($riskDistance * $this->riskRewardMultiplier);
-                    
-                    Log::info("[{$symbol}] Bearish CHoCH detected (Uptrend Reversal)", [
-                        'entry' => $entryPrice,
-                        'broken_swing_low' => $swingLow,
-                        'current_price' => $currentPrice,
-                        'sl' => $stopLoss,
-                        'sl_percent' => round(abs(($entryPrice - $stopLoss) / $entryPrice) * 100, 2)
-                    ]);
-                    
-                    return [
-                        'symbol' => $symbol,
-                        'type' => 'short',
-                        'pattern' => 'Change of Character (Bearish)',
-                        'confidence' => 75,
-                        'entry_price' => $entryPrice,
-                        'stop_loss' => $stopLoss,
-                        'take_profit' => $takeProfit,
-                    ];
-                }
-            }
-        }
-        
-        // === BULLISH CHoCH (Downtrend Breaking Up) ===
-        if ($wasDowntrend) {
-            // Find recent swing high in the downtrend
-            $swingHigh = max(array_slice($highs, 2, 15));
-            $currentHigh = $recentCandles[0]['high'];
-            
-            // CHoCH occurs when price breaks above a swing high in a downtrend
-            if ($currentHigh > $swingHigh * 1.002) {
-                // Entry on retest of the broken high (now support)
-                $entryPrice = $swingHigh * 1.002;
-                
-                $distancePercent = abs(($currentPrice - $entryPrice) / $entryPrice) * 100;
-                
-                if ($distancePercent <= 5) {
-                    $rawStopLoss = $swingHigh - ($atr * 1.5);
-                    $stopLoss = $this->calculateStopLossWithCap($entryPrice, $rawStopLoss, 'long');
-                    $riskDistance = $entryPrice - $stopLoss;
-                    $takeProfit = $entryPrice + ($riskDistance * $this->riskRewardMultiplier);
-                    
-                    Log::info("[{$symbol}] Bullish CHoCH detected (Downtrend Reversal)", [
-                        'entry' => $entryPrice,
-                        'broken_swing_high' => $swingHigh,
-                        'current_price' => $currentPrice,
-                        'sl' => $stopLoss,
-                        'sl_percent' => round(abs(($entryPrice - $stopLoss) / $entryPrice) * 100, 2)
-                    ]);
-                    
-                    return [
-                        'symbol' => $symbol,
-                        'type' => 'long',
-                        'pattern' => 'Change of Character (Bullish)',
-                        'confidence' => 75,
-                        'entry_price' => $entryPrice,
-                        'stop_loss' => $stopLoss,
-                        'take_profit' => $takeProfit,
-                    ];
-                }
-            }
-        }
-        
         return null;
     }
 

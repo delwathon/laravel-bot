@@ -106,70 +106,37 @@
             <div class="mb-4">
                 <label class="form-label fw-semibold">Select Trading Pairs to Monitor</label>
                 <div class="row g-3">
-                    <div class="col-md-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pair_btcusdt" name="pairs[]" value="BTCUSDT" {{ in_array('BTCUSDT', $enabledPairs) ? 'checked' : '' }}>
-                            <label class="form-check-label" for="pair_btcusdt">
-                                <i class="bi bi-currency-bitcoin text-warning me-1"></i>BTCUSDT
-                            </label>
+
+                    @php
+                        $pairs = [
+                            'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT', 'ADAUSDT', 'DOGEUSDT', 'TRXUSDT',
+                            'MATICUSDT', 'DOTUSDT', 'LTCUSDT', 'LINKUSDT', 'AVAXUSDT', 'UNIUSDT', 'ATOMUSDT', 'XLMUSDT',
+                            'FILUSDT', 'ETCUSDT', 'NEARUSDT', 'APTUSDT', 'ICPUSDT', 'ARBUSDT', 'OPUSDT', 'LDOUSDT',
+                            'INJUSDT', 'STXUSDT', 'TIAUSDT', 'SUIUSDT', 'SEIUSDT', 'RENDERUSDT', 'RNDRUSDT', 'ALGOUSDT',
+                            'VETUSDT', 'AAVEUSDT', 'SUSHIUSDT', 'PEPEUSDT', 'WIFUSDT', 'BONKUSDT', 'FLOKIUSDT', 'SHIBUSDT',
+                            'FTMUSDT', 'SANDUSDT', 'MANAUSDT', 'AXSUSDT', 'GALAUSDT', 'ENJUSDT', 'CHZUSDT', 'GMTUSDT',
+                            'APEUSDT', 'BLURUSDT'
+                        ];
+                    @endphp
+
+                    @foreach ($pairs as $pair)
+                        <div class="col-md-2">
+                            <div class="form-check form-switch">
+                                <input 
+                                    class="form-check-input" 
+                                    type="checkbox" 
+                                    id="pair_{{ strtolower($pair) }}" 
+                                    name="pairs[]" 
+                                    value="{{ $pair }}" 
+                                    {{ in_array($pair, $enabledPairs) ? 'checked' : '' }}
+                                >
+                                <label class="form-check-label" for="pair_{{ strtolower($pair) }}">
+                                    <i class="bi bi-coin text-primary me-1"></i>{{ $pair }}
+                                </label>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pair_ethusdt" name="pairs[]" value="ETHUSDT" {{ in_array('ETHUSDT', $enabledPairs) ? 'checked' : '' }}>
-                            <label class="form-check-label" for="pair_ethusdt">
-                                <i class="bi bi-currency-exchange text-info me-1"></i>ETHUSDT
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pair_solusdt" name="pairs[]" value="SOLUSDT" {{ in_array('SOLUSDT', $enabledPairs) ? 'checked' : '' }}>
-                            <label class="form-check-label" for="pair_solusdt">
-                                <i class="bi bi-coin text-purple me-1"></i>SOLUSDT
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pair_xrpusdt" name="pairs[]" value="XRPUSDT" {{ in_array('XRPUSDT', $enabledPairs) ? 'checked' : '' }}>
-                            <label class="form-check-label" for="pair_xrpusdt">
-                                <i class="bi bi-currency-dollar text-success me-1"></i>XRPUSDT
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pair_adausdt" name="pairs[]" value="ADAUSDT" {{ in_array('ADAUSDT', $enabledPairs) ? 'checked' : '' }}>
-                            <label class="form-check-label" for="pair_adausdt">
-                                <i class="bi bi-coin text-primary me-1"></i>ADAUSDT
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pair_avaxusdt" name="pairs[]" value="AVAXUSDT" {{ in_array('AVAXUSDT', $enabledPairs) ? 'checked' : '' }}>
-                            <label class="form-check-label" for="pair_avaxusdt">
-                                <i class="bi bi-coin text-danger me-1"></i>AVAXUSDT
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pair_dotusdt" name="pairs[]" value="DOTUSDT" {{ in_array('DOTUSDT', $enabledPairs) ? 'checked' : '' }}>
-                            <label class="form-check-label" for="pair_dotusdt">
-                                <i class="bi bi-coin text-pink me-1"></i>DOTUSDT
-                            </label>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="pair_maticusdt" name="pairs[]" value="MATICUSDT" {{ in_array('MATICUSDT', $enabledPairs) ? 'checked' : '' }}>
-                            <label class="form-check-label" for="pair_maticusdt">
-                                <i class="bi bi-coin text-purple me-1"></i>MATICUSDT
-                            </label>
-                        </div>
-                    </div>
+                    @endforeach
+
                 </div>
             </div>
         </div>
